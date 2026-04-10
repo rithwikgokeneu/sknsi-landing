@@ -254,42 +254,89 @@
 
   </div>
 
-  <script>
-    (function () {
-      const SEED = 142; // base count so it doesn't start at zero
-      const btn = document.getElementById('likeBtn');
-      const countEl = document.getElementById('likeCount');
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getDatabase, ref, get, set, remove, onValue, runTransaction }
+      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
-      // Read stored values
-      let count = parseInt(localStorage.getItem('sknsi_likes') || SEED, 10);
-      let liked = localStorage.getItem('sknsi_liked') === '1';
+    // ─── PASTE YOUR FIREBASE CONFIG HERE ───────────────────────────────────────
+    const firebaseConfig = {
+      apiKey:            "YOUR_API_KEY",
+      authDomain:        "YOUR_PROJECT.firebaseapp.com",
+      databaseURL:       "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId:         "YOUR_PROJECT_ID",
+      storageBucket:     "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId:             "YOUR_APP_ID"
+    };
+    // ───────────────────────────────────────────────────────────────────────────
 
-      function render() {
-        countEl.textContent = count;
-        btn.classList.toggle('liked', liked);
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    const btn     = document.getElementById('likeBtn');
+    const countEl = document.getElementById('likeCount');
+
+    // ── Get a stable ID for this device/browser ──────────────────────────────
+    // Uses IP hash (private — only the hash is stored, never the raw IP)
+    async function getUserKey() {
+      let key = localStorage.getItem('sknsi_uid');
+      if (key) return key;
+
+      try {
+        const res  = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        const ip   = data.ip || 'unknown';
+        // SHA-256 hash so the raw IP is never stored
+        const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+        key = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0, 20);
+      } catch {
+        key = Math.random().toString(36).slice(2, 22);
       }
 
-      render();
+      localStorage.setItem('sknsi_uid', key);
+      return key;
+    }
 
-      btn.addEventListener('click', function () {
-        if (liked) {
-          liked = false;
-          count = Math.max(SEED, count - 1);
-        } else {
-          liked = true;
-          count += 1;
-        }
-        localStorage.setItem('sknsi_likes', count);
-        localStorage.setItem('sknsi_liked', liked ? '1' : '0');
+    // ── Bootstrap ─────────────────────────────────────────────────────────────
+    const userKey   = await getUserKey();
+    const totalRef  = ref(db, 'likes/total');
+    const myRef     = ref(db, `likes/users/${userKey}`);
 
-        // Trigger pop animation
-        btn.classList.remove('pop');
-        void btn.offsetWidth; // reflow to restart animation
-        btn.classList.add('pop');
+    // Check if this user already liked
+    const snap = await get(myRef);
+    let liked = snap.exists();
+    btn.classList.toggle('liked', liked);
 
-        render();
-      });
-    })();
+    // ── Real-time count listener ───────────────────────────────────────────────
+    onValue(totalRef, snap => {
+      countEl.textContent = snap.val() ?? 0;
+    });
+
+    // ── Click handler ─────────────────────────────────────────────────────────
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; // prevent double-click
+
+      if (liked) {
+        await remove(myRef);
+        await runTransaction(totalRef, n => Math.max(0, (n || 0) - 1));
+        liked = false;
+      } else {
+        await set(myRef, true);
+        await runTransaction(totalRef, n => (n || 0) + 1);
+        liked = true;
+      }
+
+      btn.classList.toggle('liked', liked);
+
+      // Pop animation
+      btn.classList.remove('pop');
+      void btn.offsetWidth;
+      btn.classList.add('pop');
+
+      btn.disabled = false;
+    });
   </script>
 
 </body>
