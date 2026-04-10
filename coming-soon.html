@@ -254,13 +254,8 @@
 
   </div>
 
-  <!-- Firebase SDK -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getDatabase, ref, get, set, remove, onValue, runTransaction }
-      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-
-    // ─── PASTE YOUR FIREBASE CONFIG HERE ───────────────────────────────────────
+    // ─── PASTE YOUR FIREBASE CONFIG HERE (leave as-is to use local counter) ───
     const firebaseConfig = {
       apiKey:            "YOUR_API_KEY",
       authDomain:        "YOUR_PROJECT.firebaseapp.com",
@@ -270,73 +265,97 @@
       messagingSenderId: "YOUR_SENDER_ID",
       appId:             "YOUR_APP_ID"
     };
-    // ───────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-
+    const SEED    = 142;
     const btn     = document.getElementById('likeBtn');
     const countEl = document.getElementById('likeCount');
+    const isFirebaseConfigured = !firebaseConfig.apiKey.startsWith('YOUR_');
 
-    // ── Get a stable ID for this device/browser ──────────────────────────────
-    // Uses IP hash (private — only the hash is stored, never the raw IP)
-    async function getUserKey() {
-      let key = localStorage.getItem('sknsi_uid');
-      if (key) return key;
-
-      try {
-        const res  = await fetch('https://api.ipify.org?format=json');
-        const data = await res.json();
-        const ip   = data.ip || 'unknown';
-        // SHA-256 hash so the raw IP is never stored
-        const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
-        key = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0, 20);
-      } catch {
-        key = Math.random().toString(36).slice(2, 22);
-      }
-
-      localStorage.setItem('sknsi_uid', key);
-      return key;
-    }
-
-    // ── Bootstrap ─────────────────────────────────────────────────────────────
-    const userKey   = await getUserKey();
-    const totalRef  = ref(db, 'likes/total');
-    const myRef     = ref(db, `likes/users/${userKey}`);
-
-    // Check if this user already liked
-    const snap = await get(myRef);
-    let liked = snap.exists();
-    btn.classList.toggle('liked', liked);
-
-    // ── Real-time count listener ───────────────────────────────────────────────
-    onValue(totalRef, snap => {
-      countEl.textContent = snap.val() ?? 0;
-    });
-
-    // ── Click handler ─────────────────────────────────────────────────────────
-    btn.addEventListener('click', async () => {
-      btn.disabled = true; // prevent double-click
-
-      if (liked) {
-        await remove(myRef);
-        await runTransaction(totalRef, n => Math.max(0, (n || 0) - 1));
-        liked = false;
-      } else {
-        await set(myRef, true);
-        await runTransaction(totalRef, n => (n || 0) + 1);
-        liked = true;
-      }
-
-      btn.classList.toggle('liked', liked);
-
-      // Pop animation
+    // ── Pop animation helper ──────────────────────────────────────────────────
+    function popBtn() {
       btn.classList.remove('pop');
       void btn.offsetWidth;
       btn.classList.add('pop');
+    }
 
-      btn.disabled = false;
-    });
+    // ══════════════════════════════════════════════════════════════════════════
+    // MODE A: Firebase (real-time, cross-device) — used when config is filled in
+    // ══════════════════════════════════════════════════════════════════════════
+    if (isFirebaseConfigured) {
+      const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+      const { getDatabase, ref, get, set, remove, onValue, runTransaction } =
+        await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+
+      const app = initializeApp(firebaseConfig);
+      const db  = getDatabase(app);
+
+      async function getUserKey() {
+        let key = localStorage.getItem('sknsi_uid');
+        if (key) return key;
+        try {
+          const res  = await fetch('https://api.ipify.org?format=json');
+          const { ip } = await res.json();
+          const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip || 'unknown'));
+          key = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0, 20);
+        } catch {
+          key = Math.random().toString(36).slice(2, 22);
+        }
+        localStorage.setItem('sknsi_uid', key);
+        return key;
+      }
+
+      const userKey  = await getUserKey();
+      const totalRef = ref(db, 'likes/total');
+      const myRef    = ref(db, `likes/users/${userKey}`);
+
+      const snap = await get(myRef);
+      let liked = snap.exists();
+      btn.classList.toggle('liked', liked);
+
+      onValue(totalRef, s => { countEl.textContent = s.val() ?? 0; });
+
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        if (liked) {
+          await remove(myRef);
+          await runTransaction(totalRef, n => Math.max(0, (n || 0) - 1));
+          liked = false;
+        } else {
+          await set(myRef, true);
+          await runTransaction(totalRef, n => (n || 0) + 1);
+          liked = true;
+        }
+        btn.classList.toggle('liked', liked);
+        popBtn();
+        btn.disabled = false;
+      });
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // MODE B: localStorage fallback — works immediately, no setup needed
+    // ══════════════════════════════════════════════════════════════════════════
+    } else {
+      let count = parseInt(localStorage.getItem('sknsi_likes') || SEED, 10);
+      let liked = localStorage.getItem('sknsi_liked') === '1';
+
+      countEl.textContent = count;
+      btn.classList.toggle('liked', liked);
+
+      btn.addEventListener('click', () => {
+        if (liked) {
+          liked = false;
+          count = Math.max(SEED, count - 1);
+        } else {
+          liked = true;
+          count += 1;
+        }
+        localStorage.setItem('sknsi_likes', count);
+        localStorage.setItem('sknsi_liked', liked ? '1' : '0');
+        countEl.textContent = count;
+        btn.classList.toggle('liked', liked);
+        popBtn();
+      });
+    }
   </script>
 
 </body>
