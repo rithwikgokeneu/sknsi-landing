@@ -2715,8 +2715,9 @@
     width: 34px; height: 34px; border-radius: 50%;
     background: var(--accent);
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
+    flex-shrink: 0; overflow: hidden;
   }
+  .cw-avatar img { width: 24px; height: auto; filter: brightness(0) invert(1); }
   .cw-hname  { font-size: 13px; font-weight: 700; color: #fff; display: block; }
   .cw-hsub   { font-size: 11px; color: rgba(255,255,255,0.4); display: block; margin-top: 1px; }
   #cw-close  {
@@ -2856,7 +2857,7 @@
   <div id="cw-panel" role="dialog" aria-label="Sknsi survey">
     <div id="cw-header">
       <div class="cw-hinfo">
-        <div class="cw-avatar">🔬</div>
+        <div class="cw-avatar"><img src="images/logo.png" alt="Sknsi" /></div>
         <div>
           <span class="cw-hname">Sknsi Research</span>
           <span class="cw-hsub">Takes about 2 minutes</span>
