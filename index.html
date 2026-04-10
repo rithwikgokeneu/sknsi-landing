@@ -2584,5 +2584,423 @@
   }
 </script>
 
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     Survey Chatbot Widget
+═══════════════════════════════════════════════════════════════════════════ -->
+<style>
+  #cw-root {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    font-family: var(--font);
+  }
+
+  /* ── Trigger button ── */
+  #cw-trigger {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(155,139,208,0.55);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+  }
+  #cw-trigger:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(155,139,208,0.7);
+  }
+  #cw-trigger svg { width: 26px; height: 26px; fill: #fff; }
+
+  #cw-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 13px;
+    height: 13px;
+    background: #E91E63;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    display: none;
+    animation: cwPulse 2s ease-in-out infinite;
+  }
+  #cw-dot.visible { display: block; }
+  @keyframes cwPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%       { transform: scale(1.35); opacity: 0.75; }
+  }
+
+  /* ── Chat panel ── */
+  #cw-panel {
+    position: absolute;
+    bottom: 68px;
+    right: 0;
+    width: 340px;
+    max-height: 530px;
+    background: #1a1530;
+    border-radius: 20px;
+    border: 1px solid rgba(155,139,208,0.2);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  #cw-panel.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+  }
+
+  /* Header */
+  #cw-header {
+    padding: 14px 16px;
+    background: #2D2540;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(155,139,208,0.15);
+    flex-shrink: 0;
+  }
+  .cw-hinfo { display: flex; align-items: center; gap: 10px; }
+  .cw-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .cw-hname  { font-size: 13px; font-weight: 700; color: #fff; display: block; }
+  .cw-hsub   { font-size: 11px; color: rgba(255,255,255,0.4); display: block; margin-top: 1px; }
+  #cw-close  {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.35); font-size: 20px; line-height: 1;
+    padding: 4px; transition: color 0.15s;
+  }
+  #cw-close:hover { color: #fff; }
+
+  /* Progress */
+  #cw-progress { height: 2px; background: rgba(155,139,208,0.12); flex-shrink: 0; }
+  #cw-progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.45s ease; }
+
+  /* Messages */
+  #cw-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    scroll-behavior: smooth;
+  }
+  #cw-messages::-webkit-scrollbar { width: 3px; }
+  #cw-messages::-webkit-scrollbar-thumb { background: rgba(155,139,208,0.25); border-radius: 4px; }
+
+  .cw-msg {
+    max-width: 86%;
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    word-break: break-word;
+    animation: cwIn 0.2s ease;
+  }
+  @keyframes cwIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .cw-msg.bot  { background: #2D2540; color: rgba(255,255,255,0.88); border-bottom-left-radius: 4px; align-self: flex-start; }
+  .cw-msg.user { background: var(--accent); color: #fff; font-weight: 600; border-bottom-right-radius: 4px; align-self: flex-end; }
+
+  /* Typing indicator */
+  .cw-typing {
+    display: flex; gap: 4px; align-items: center;
+    padding: 11px 14px;
+    background: #2D2540;
+    border-radius: 14px; border-bottom-left-radius: 4px;
+    align-self: flex-start;
+    animation: cwIn 0.2s ease;
+  }
+  .cw-typing span {
+    width: 6px; height: 6px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 50%;
+    animation: cwDot 1.2s ease-in-out infinite;
+  }
+  .cw-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .cw-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes cwDot {
+    0%, 80%, 100% { transform: scale(0.75); opacity: 0.35; }
+    40%           { transform: scale(1);    opacity: 1; }
+  }
+
+  /* Options area */
+  #cw-options {
+    padding: 6px 13px 13px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .cw-opt {
+    background: rgba(155,139,208,0.1);
+    border: 1px solid rgba(155,139,208,0.28);
+    border-radius: 100px;
+    padding: 6px 13px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .cw-opt:hover {
+    background: rgba(155,139,208,0.22);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Email form */
+  #cw-email-form {
+    padding: 6px 13px 13px;
+    display: none;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  #cw-email-input {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(155,139,208,0.28);
+    border-radius: 100px;
+    padding: 9px 14px;
+    font-size: 13px;
+    color: #fff;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 0;
+  }
+  #cw-email-input::placeholder { color: rgba(255,255,255,0.28); }
+  #cw-email-input:focus { border-color: var(--accent); }
+  #cw-email-submit {
+    background: var(--accent);
+    border: none;
+    border-radius: 100px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--font);
+    white-space: nowrap;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  #cw-email-submit:hover { background: #8a79c0; }
+
+  @media (max-width: 480px) {
+    #cw-root  { bottom: 16px; right: 16px; }
+    #cw-panel { width: calc(100vw - 32px); }
+  }
+</style>
+
+<div id="cw-root">
+  <!-- Chat panel -->
+  <div id="cw-panel" role="dialog" aria-label="Sknsi survey">
+    <div id="cw-header">
+      <div class="cw-hinfo">
+        <div class="cw-avatar">🔬</div>
+        <div>
+          <span class="cw-hname">Sknsi Research</span>
+          <span class="cw-hsub">Takes about 2 minutes</span>
+        </div>
+      </div>
+      <button id="cw-close" aria-label="Close">&#x2715;</button>
+    </div>
+    <div id="cw-progress"><div id="cw-progress-bar"></div></div>
+    <div id="cw-messages"></div>
+    <div id="cw-options"></div>
+    <form id="cw-email-form" novalidate>
+      <input id="cw-email-input" type="email" placeholder="your@email.com" />
+      <button type="submit" id="cw-email-submit">Send</button>
+    </form>
+  </div>
+
+  <!-- Floating trigger -->
+  <button id="cw-trigger" aria-label="Open survey">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+    <span id="cw-dot"></span>
+  </button>
+</div>
+
+<script>
+(function () {
+  // ── Paste your deployed Apps Script URL here ──────────────────────────────
+  var APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL';
+  // ─────────────────────────────────────────────────────────────────────────
+
+  var QUESTIONS = [
+    { key: 'q1', text: 'When you first notice a new rash or spot, what do you do?',
+      type: 'choice', options: ['Search online', 'Try home remedies', 'Ask friends or family', 'See a doctor', 'Wait and watch'] },
+    { key: 'q2', text: 'Have you ever been surprised that a skin issue got worse without you realizing it?',
+      type: 'choice', options: ['Yes', 'No', 'Sometimes'] },
+    { key: 'q3', text: 'How do you track whether your skin is getting better or worse over time?',
+      type: 'choice', options: ['I take photos', 'I note symptoms', 'I use an app', "I don't track"] },
+    { key: 'q4', text: 'How do you decide if a skin issue is serious enough to see a doctor?',
+      type: 'choice', options: ['It gets very bad', "It doesn't improve", 'It spreads', 'After trying home remedies'] },
+    { key: 'q5', text: 'Who or what do you turn to first for skin advice?',
+      type: 'choice', options: ['Search online', 'Friends or family', 'Pharmacist', 'Doctor or clinic', 'Social media'] },
+    { key: 'age', text: 'What is your age range?',
+      type: 'choice', options: ['Under 18', '18-24', '25-34', '35-44', '45-54', '55+'] },
+    { key: 'email', text: "Last step — what's your email address? We'll send the gift card here.",
+      type: 'email' }
+  ];
+
+  var panel       = document.getElementById('cw-panel');
+  var trigger     = document.getElementById('cw-trigger');
+  var closeBtn    = document.getElementById('cw-close');
+  var messages    = document.getElementById('cw-messages');
+  var optionsEl   = document.getElementById('cw-options');
+  var emailForm   = document.getElementById('cw-email-form');
+  var emailInput  = document.getElementById('cw-email-input');
+  var progressBar = document.getElementById('cw-progress-bar');
+  var dot         = document.getElementById('cw-dot');
+
+  var isOpen = false, started = false, step = -1, answers = {};
+
+  function openPanel() {
+    isOpen = true;
+    panel.classList.add('open');
+    dot.classList.remove('visible');
+    if (!started) { started = true; setTimeout(showIntro, 450); }
+  }
+  function closePanel() { isOpen = false; panel.classList.remove('open'); }
+
+  trigger.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
+  closeBtn.addEventListener('click', closePanel);
+
+  // Auto-open: dot at 5s, panel at 6.5s
+  setTimeout(function () {
+    dot.classList.add('visible');
+    setTimeout(function () { if (!isOpen) openPanel(); }, 1500);
+  }, 5000);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function addMsg(text, type) {
+    var el = document.createElement('div');
+    el.className = 'cw-msg ' + type;
+    el.textContent = text;
+    messages.appendChild(el);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function botSay(text, delay) {
+    return new Promise(function (resolve) {
+      var t = document.createElement('div');
+      t.className = 'cw-typing';
+      t.innerHTML = '<span></span><span></span><span></span>';
+      messages.appendChild(t);
+      messages.scrollTop = messages.scrollHeight;
+      setTimeout(function () {
+        t.remove();
+        addMsg(text, 'bot');
+        resolve();
+      }, delay || 650);
+    });
+  }
+
+  function showOptions(opts, cb) {
+    optionsEl.innerHTML = '';
+    emailForm.style.display = 'none';
+    opts.forEach(function (opt) {
+      var btn = document.createElement('button');
+      btn.className = 'cw-opt';
+      btn.textContent = opt;
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
+        optionsEl.innerHTML = '';
+        addMsg(opt, 'user');
+        cb(opt);
+      });
+      optionsEl.appendChild(btn);
+    });
+  }
+
+  function setProgress(current) {
+    progressBar.style.width = ((current / QUESTIONS.length) * 100) + '%';
+  }
+
+  // ── Intro ─────────────────────────────────────────────────────────────────
+  async function showIntro() {
+    await botSay('Hi there!', 500);
+    await botSay('Fill out this 2-minute form about skin conditions. If you qualify, you get a $10 gift card.', 900);
+    await botSay('Ready to start?', 600);
+    showOptions(["Yes, let's go!", 'Maybe later'], function (ans) {
+      if (ans === "Yes, let's go!") { step = 0; askQuestion(); }
+      else { botSay('No worries! You can click the chat icon anytime to come back.', 500); }
+    });
+  }
+
+  // ── Questions ─────────────────────────────────────────────────────────────
+  async function askQuestion() {
+    if (step >= QUESTIONS.length) { submitAndFinish(); return; }
+    setProgress(step + 1);
+    var q = QUESTIONS[step];
+    await botSay(q.text, 750);
+
+    if (q.type === 'choice') {
+      showOptions(q.options, function (ans) {
+        answers[q.key] = ans;
+        step++;
+        setTimeout(askQuestion, 350);
+      });
+    } else {
+      optionsEl.innerHTML = '';
+      emailForm.style.display = 'flex';
+      setTimeout(function () { emailInput.focus(); }, 100);
+    }
+  }
+
+  emailForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = emailInput.value.trim();
+    if (!email || !email.includes('@')) { emailInput.style.borderColor = '#E91E63'; return; }
+    emailForm.style.display = 'none';
+    answers['email'] = email;
+    addMsg(email, 'user');
+    step++;
+    setTimeout(askQuestion, 350);
+  });
+
+  // ── Submit to Google Sheets ───────────────────────────────────────────────
+  async function submitAndFinish() {
+    setProgress(QUESTIONS.length);
+    await botSay('Submitting your responses...', 500);
+
+    if (APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL') {
+      try {
+        var payload = Object.assign({}, answers, { timestamp: new Date().toISOString() });
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: new URLSearchParams({ payload: JSON.stringify(payload) })
+        });
+      } catch (err) { /* no-cors fetch always throws — data still saves */ }
+    }
+
+    await botSay('Thank you so much! 🎉', 700);
+    await botSay("We'll review your responses and reach out about the gift card to your email.", 900);
+    optionsEl.innerHTML = '';
+  }
+})();
+</script>
+
 </body>
 </html>
