@@ -2850,41 +2850,17 @@
   @media (max-width: 540px) {
     #cw-root { bottom: 16px; right: 16px; }
 
-    /* Panel becomes a bottom sheet on mobile */
     #cw-panel {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      width: 100%;
-      max-height: 88vh;
-      border-radius: 20px 20px 0 0;
-      transform: translateY(20px) scale(1);
-    }
-    #cw-panel.open {
-      transform: translateY(0) scale(1);
+      width: calc(100vw - 32px);
+      max-height: 75vh;
     }
 
-    /* Label repositions above trigger on small screens */
     #cw-label {
-      right: 0;
-      width: min(230px, calc(100vw - 90px));
+      width: min(220px, calc(100vw - 90px));
       font-size: 12px;
     }
 
-    /* Larger tap targets for options */
-    .cw-opt {
-      font-size: 13px;
-      padding: 8px 14px;
-    }
-
-    /* Email/input row stacks on very small screens */
-    #cw-email-form {
-      flex-wrap: wrap;
-    }
-    #cw-email-input { min-width: 0; flex: 1 1 100%; border-radius: 12px; }
-    #cw-email-submit { flex: 1 1 100%; border-radius: 12px; }
-
+    .cw-opt { font-size: 13px; padding: 8px 13px; }
     #cw-messages { padding: 12px 11px; }
     .cw-msg { font-size: 13px; }
   }
