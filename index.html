@@ -1,0 +1,2589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sknsi — Sknsight AI</title>
+  <link rel="icon" type="image/png" href="images/logo.png" />
+  <link rel="apple-touch-icon" href="images/logo.png" />
+  <meta name="description" content="AI that reads your skin, tracks changes over time, and tells you what matters. Get your personalized skin analysis in seconds." />
+  <meta name="theme-color" content="#ffffff" />
+  <!-- Preconnect to font origins — eliminates DNS + TLS handshake from critical path -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Non-render-blocking font load: preload trick prevents fonts blocking FCP -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
+  <!-- Preload LCP image (WebP for modern browsers) -->
+  <link rel="preload" as="image" href="images/ashish.webp" type="image/webp" fetchpriority="high" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:        #9B8BD0;
+      --accent-dark:   #2D2540;
+      --accent-light:  #EDE9F8;
+      --pink:          #C2185B;
+      --text:          #0D0D0D;
+      --text-secondary:#444;
+      --gray:          #666;
+      --gray-light:    #999;
+      --border:        #E8E8E8;
+      --dark-bg:       #0D0D0D;
+      --white:         #ffffff;
+      --font:          'Plus Jakarta Sans', sans-serif;
+      /* Spacing scale */
+      --section-pad-v: 80px;
+      --section-pad-h: 48px;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background: #ffffff;
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── OUTER WRAPPER ── */
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+      gap: 0;
+    }
+
+    /* ── CARD (hero section) ── */
+    .card {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 0;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: none;
+      position: relative;
+    }
+
+    /* ─────────────────────────────────────
+       NAVBAR
+    ───────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      gap: 16px;
+      transition: top 0.35s cubic-bezier(0.4,0,0.2,1),
+                  width 0.35s cubic-bezier(0.4,0,0.2,1),
+                  height 0.35s cubic-bezier(0.4,0,0.2,1),
+                  padding 0.35s cubic-bezier(0.4,0,0.2,1),
+                  background 0.35s ease,
+                  box-shadow 0.35s ease,
+                  border-radius 0.35s ease,
+                  transform 0.35s ease;
+    }
+    nav.nav-scrolled {
+      top: 10px;
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
+      width: min(900px, calc(100vw - 40px));
+      height: 54px;
+      padding: 0 24px;
+      background: rgba(255, 234, 244, 0.72);
+      border-radius: 100px;
+      border: 1px solid rgba(194, 24, 91, 0.18);
+      box-shadow: 0 4px 28px rgba(194, 24, 91, 0.14), 0 1px 8px rgba(194, 24, 91, 0.08);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .nav-logo-img {
+      height: 68px;
+      width: auto;
+      display: block;
+      mix-blend-mode: multiply;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+      flex: 1;
+      justify-content: center;
+    }
+    .nav-links a {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color 0.18s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 20;
+    }
+
+    /* Mobile menu button */
+    .mobile-menu-btn {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 44px;
+      height: 44px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      min-width: 44px;
+      min-height: 44px;
+      position: relative;
+      z-index: 15;
+    }
+    .mobile-menu-btn:hover { opacity: 0.7; }
+    .mobile-menu-btn span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--text);
+      margin: 3px 0;
+      transition: all 0.3s ease;
+      border-radius: 1px;
+      position: relative;
+    }
+    .mobile-menu-btn.active span:nth-child(1) {
+      transform: rotate(-45deg) translate(-6px, 6px);
+      background: var(--accent);
+    }
+    .mobile-menu-btn.active span:nth-child(2) {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+    .mobile-menu-btn.active span:nth-child(3) {
+      transform: rotate(45deg) translate(-6px, -6px);
+      background: var(--accent);
+    }
+
+    /* ── MOBILE MENU — full-screen glassmorphism overlay ── */
+    .mobile-menu {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(13, 9, 26, 0.82);
+      backdrop-filter: blur(32px) saturate(180%);
+      -webkit-backdrop-filter: blur(32px) saturate(180%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.32s ease, visibility 0s linear 0.32s;
+      /* Subtle top accent glow */
+      border-top: 1px solid rgba(155,139,208,0.25);
+    }
+    /* Top purple gradient accent */
+    .mobile-menu::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 220px;
+      background: linear-gradient(180deg, rgba(155,139,208,0.18) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .mobile-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.32s ease, visibility 0s;
+    }
+
+    .menu-close {
+      position: absolute;
+      top: 22px; right: 22px;
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.85);
+      padding: 0;
+      transition: background 0.18s;
+      z-index: 1;
+    }
+    .menu-close:hover { background: rgba(155,139,208,0.28); }
+    .menu-close svg { width: 16px; height: 16px; }
+
+    .mobile-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      position: relative;
+      z-index: 1;
+    }
+    .mobile-menu li { margin: 0; }
+    .mobile-menu ul a {
+      display: block;
+      padding: 12px 32px;
+      font-family: var(--font);
+      font-size: clamp(22px, 6vw, 30px);
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      color: rgba(255,255,255,0.88);
+      text-decoration: none;
+      text-align: center;
+      white-space: nowrap;
+      transition: color 0.18s, letter-spacing 0.18s;
+    }
+    .mobile-menu ul a:hover {
+      color: var(--accent);
+      letter-spacing: 0px;
+    }
+
+    /* Staggered link entrance */
+    .mobile-menu.show li:nth-child(1) a { animation: menuLinkIn 0.38s 0.08s both; }
+    .mobile-menu.show li:nth-child(2) a { animation: menuLinkIn 0.38s 0.14s both; }
+    .mobile-menu.show li:nth-child(3) a { animation: menuLinkIn 0.38s 0.20s both; }
+    .mobile-menu.show li:nth-child(4) a { animation: menuLinkIn 0.38s 0.26s both; }
+    @keyframes menuLinkIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .menu-footer {
+      position: absolute;
+      bottom: 36px;
+      left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 0 32px;
+      z-index: 1;
+    }
+    .menu-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 320px;
+      padding: 13px 20px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 100px;
+      text-decoration: none;
+      transition: background 0.18s;
+      backdrop-filter: blur(8px);
+    }
+    .menu-login-btn:hover { background: rgba(255,255,255,0.14); }
+    .menu-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 320px;
+      padding: 13px 20px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 100px;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: -0.2px;
+      transition: background 0.18s, transform 0.15s;
+      box-shadow: 0 4px 24px rgba(155,139,208,0.45);
+    }
+    .menu-cta:hover { background: #8a79c0; transform: translateY(-1px); }
+
+    .btn-login {
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 8px 14px;
+      white-space: nowrap;
+      transition: color 0.18s;
+    }
+    .btn-login:hover { color: var(--accent); }
+
+    .btn-try-now {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 100px;
+      padding: 9px 22px;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      min-height: 36px;
+      transition: background 0.18s, transform 0.15s;
+    }
+    .btn-try-now:hover { background: #8a79c0; transform: translateY(-1px); }
+
+    /* ─────────────────────────────────────
+       HERO — full bleed image + overlays
+    ───────────────────────────────────── */
+    .hero {
+      position: relative;
+      width: 100%;
+      height: 532px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    /* Full bleed background image */
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 10%;
+      display: block;
+    }
+
+    /* Gradient — left fade for text readability + strong bottom bleed to white */
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(255,255,255,0.50) 0%, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0) 50%),
+        linear-gradient(to top,   rgba(255,255,255,1.0) 0%, rgba(255,255,255,0.75) 8%, rgba(255,255,255,0.2) 22%, rgba(255,255,255,0) 38%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── LEFT text overlay ── */
+    .hero-left {
+      position: absolute;
+      bottom: 48px; /* Anchor to bottom — face shows above, text below */
+      left: 48px;
+      z-index: 2;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .hero-headline {
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.03;
+      letter-spacing: -2px;
+      color: var(--text);
+    }
+    .hero-headline .accent { color: var(--accent); }
+
+    .hero-sub {
+      margin-top: 14px;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .btn-analyze {
+      margin-top: 24px;
+      display: inline-block;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--accent-dark);
+      border: none;
+      border-radius: 100px;
+      padding: 13px 30px;
+      cursor: pointer;
+      width: fit-content;
+      transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+      min-height: 48px; /* Touch target size */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-analyze:hover {
+      background: #3c3256;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(45,37,64,0.25);
+    }
+
+    /* ── RIGHT stats overlay ── */
+    .hero-right {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      right: 48px;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 24px;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: right;
+    }
+    .stat-text { display: flex; flex-direction: column; align-items: flex-end; }
+    .stat-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .stat-number {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      letter-spacing: -0.8px;
+    }
+    .stat-label {
+      font-size: 11.5px;
+      font-weight: 400;
+      color: var(--gray);
+      line-height: 1.5;
+      margin-top: 3px;
+    }
+
+    /* HUD scan boxes */
+    .hud-box {
+      position: absolute;
+      z-index: 5;
+      border: 1.5px solid rgba(255,215,0,0.95);
+      border-radius: 4px;
+      padding: 7px 9px 8px 12px;
+      backdrop-filter: blur(3px);
+      background: rgba(255,215,0,0.08);
+      opacity: 0;
+      animation: hudIn 5s ease-in-out infinite;
+      pointer-events: none;
+      filter: drop-shadow(0 0 4px rgba(255,215,0,0.6));
+    }
+    .hud-box::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 5px; height: 5px;
+      background: #FFD700;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(255,215,0,0.9);
+    }
+    .hud-label {
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      color: #FFD700;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+      padding: 2px 0 0 2px;
+      line-height: 1.35;
+      white-space: nowrap;
+      display: block;
+    }
+    /* Upper right cheek */
+    .hud-1 { top: 43%; left: 48%; width: 88px; animation-delay: 0s; }
+    /* Mid right cheek — near nose */
+    .hud-2 { top: 51%; left: 55%; width: 88px; animation-delay: 0.7s; }
+    /* Lower right jaw */
+    .hud-3 { top: 61%; left: 53%; width: 92px; animation-delay: 1.4s; }
+
+    /*
+     * Responsive HUD sizing — positions derived from object-fit:cover math.
+     * Desktop scales image by WIDTH (zoomed in) → face appears mid-container.
+     * Mobile scales image by HEIGHT (full image) → face is in TOP ~25-35%.
+     */
+    @media (max-width: 900px) {
+      /* Hero 460-480px tall, image scaled by width ~0.78×, offset ~26px */
+      .hud-box { padding: 5px 7px 6px 9px; }
+      .hud-1 { top: 32%; left: 47%; width: 72px; }
+      .hud-2 { top: 38%; left: 55%; width: 72px; }
+      .hud-3 { top: 46%; left: 53%; width: 76px; }
+      .hud-label { font-size: 7px; }
+    }
+    @media (max-width: 600px) {
+      /* Hero 400-460px tall — image scaled by HEIGHT, full image visible.
+         Face occupies top ~42% of image → cheek spots at 26-35% of container. */
+      .hud-box { padding: 4px 6px 5px 8px; }
+      .hud-1 { top: 26%; left: 46%; width: 62px; }
+      .hud-2 { top: 30%; left: 54%; width: 62px; }
+      .hud-3 { top: 35%; left: 52%; width: 64px; }
+      .hud-label { font-size: 6.5px; letter-spacing: 0.2px; }
+    }
+
+    @keyframes hudIn {
+      0%        { opacity: 0; transform: scale(0.9); }
+      10%, 65%  { opacity: 1; transform: scale(1); box-shadow: 0 0 10px rgba(255,215,0,0.4); }
+      85%, 100% { opacity: 0; }
+    }
+
+    /* ─────────────────────────────────────
+       RESPONSIVE
+    ───────────────────────────────────── */
+    /* ─────────────────────────────────────
+       RESPONSIVE DESIGN
+    ───────────────────────────────────── */
+
+    /* Large screens (laptops/desktops) */
+    @media (max-width: 1440px) {
+      nav { padding: 0 32px; }
+      .hero-headline { font-size: 52px; }
+    }
+
+    /* Medium screens (tablets/iPads) */
+    @media (max-width: 1024px) {
+      nav { padding: 0 28px; }
+      .hero { height: 480px; }
+      .hero-headline { font-size: 44px; line-height: 1.1; }
+      /* Tablet: anchor text to bottom half of hero */
+      .hero-left { top: auto; bottom: 32px; transform: none; left: 32px; max-width: 320px; }
+      .hero-right { right: 24px; gap: 16px; }
+      .stat-number { font-size: 24px; }
+      .stat-label { font-size: 11px; }
+      .why-section { padding: 56px 32px; }
+      .diff-section { padding: 56px 32px; }
+      .mobile-menu-btn { display: flex; } /* Show mobile menu on tablets too */
+      .btn-login { display: none; }
+      .btn-try-now { display: none; }
+      /* Mobile scrolled pill */
+      nav.nav-scrolled {
+        top: 10px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: calc(100vw - 32px);
+        border-radius: 100px;
+        height: 52px;
+        padding: 0 20px;
+        background: rgba(255, 234, 244, 0.72);
+        border: 1px solid rgba(194, 24, 91, 0.18);
+        box-shadow: 0 4px 24px rgba(194, 24, 91, 0.14), 0 1px 6px rgba(194, 24, 91, 0.08);
+        backdrop-filter: blur(24px) saturate(200%);
+        -webkit-backdrop-filter: blur(24px) saturate(200%);
+      }
+    }
+
+    /* Small tablets (768px - iPad portrait) - MOBILE PRIORITY */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; height: 68px; }
+      .nav-logo-img { height: 60px; }
+      .nav-links { display: none; }
+      .btn-login { display: none; }
+      .btn-try-now { display: none; }
+      .mobile-menu-btn { display: flex; }
+      nav.nav-scrolled {
+        top: 10px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: calc(100vw - 32px);
+        border-radius: 100px;
+        height: 52px;
+        padding: 0 20px;
+        background: rgba(255, 234, 244, 0.72);
+        border: 1px solid rgba(194, 24, 91, 0.18);
+        box-shadow: 0 4px 24px rgba(194, 24, 91, 0.14), 0 1px 6px rgba(194, 24, 91, 0.08);
+        backdrop-filter: blur(24px) saturate(200%);
+        -webkit-backdrop-filter: blur(24px) saturate(200%);
+      }
+
+      .hero { height: 460px; } /* Height to show face above text */
+      .hero-headline { font-size: 32px; letter-spacing: -1.2px; line-height: 1.1; }
+      /* Anchor text to bottom — face shows in top half, text in bottom half */
+      .hero-left { top: auto; bottom: 20px; transform: none; left: 20px; max-width: 260px; }
+      .hero-overlay {
+        background:
+          linear-gradient(to right, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0) 75%),
+          linear-gradient(to top, rgba(255,255,255,1.0) 0%, rgba(255,255,255,0.75) 8%, rgba(255,255,255,0.2) 22%, rgba(255,255,255,0) 38%);
+      }
+      .hero-right { display: none; } /* Stats shown as cards below hero on mobile */
+      /* HUD boxes remain visible on mobile — sized via breakpoints above */
+
+      .problem-section { flex-direction: column; min-height: auto; padding: 0; margin-top: 32px; }
+      .problem-left { flex: none; height: auto; width: 100%; aspect-ratio: 16 / 9; }
+      .problem-right { padding: 32px 20px; }
+      .problem-headline { font-size: 26px; }
+
+      .why-section { padding: 48px 20px; }
+      .why-card { flex: 1 1 100%; }
+
+      .diff-section { padding: 48px 20px; }
+      .diff-card--wide, .diff-card--narrow { flex: 1 1 100%; }
+    }
+
+    /* Mobile phones (480px and below) - HIGHEST MOBILE PRIORITY */
+    @media (max-width: 480px) {
+      nav { padding: 0 16px; height: 62px; }
+      .nav-logo-img { height: 54px; }
+      nav.nav-scrolled {
+        top: 8px;
+        width: calc(100vw - 24px);
+        height: 48px;
+        padding: 0 16px;
+      }
+
+      .hero { height: 400px; }
+      .hero-headline { font-size: 26px; letter-spacing: -0.8px; line-height: 1.1; }
+      .hero-left { top: auto; bottom: 16px; transform: none; left: 16px; max-width: 230px; }
+
+      .problem-section { padding: 0; margin-top: 32px; }
+      .problem-left { flex: none; height: auto; width: 100%; aspect-ratio: 4 / 3; }
+      .problem-right { padding: 24px 16px; }
+      .problem-headline { font-size: 22px; letter-spacing: -0.6px; }
+      .problem-para { font-size: 13px; line-height: 1.5; }
+      .problem-stat-number { font-size: 38px; }
+
+      .why-section { padding: 40px 16px; }
+      .why-header { margin-bottom: 24px; }
+      .why-title { font-size: 20px; }
+      .why-card { padding: 16px; gap: 12px; }
+      .why-card-icon { width: 48px; height: 48px; }
+      .why-card-title { font-size: 16px; }
+      .why-card-desc { font-size: 14px; }
+
+      .diff-section { padding: 24px 16px 32px; }
+      .diff-header { margin-bottom: 20px; }
+      .diff-title { font-size: 18px; }
+      .diff-cell { padding: 10px 12px; font-size: 13px; }
+      .diff-compare-head-cell { padding: 8px 12px; font-size: 12px; }
+    }
+
+    /* Extra small screens */
+    @media (max-width: 360px) {
+      nav { padding: 0 12px; height: 56px; }
+      .nav-logo-img { height: 48px; }
+
+      .hero { height: 360px; }
+      .hero-headline { font-size: 22px; }
+      .hero-left { top: auto; bottom: 12px; transform: none; max-width: 200px; }
+      .btn-analyze { padding: 12px 20px; font-size: 13px; min-height: 44px; }
+    }
+
+    /* ─────────────────────────────────────
+       HERO STATS CARDS — mobile only
+    ───────────────────────────────────── */
+    .hero-stats-mobile {
+      display: none; /* desktop: hidden, shown via media query */
+    }
+
+    @media (max-width: 768px) {
+      .hero-stats-mobile {
+        display: flex;
+        gap: 10px;
+        padding: 16px 20px 20px;
+        background: #fff;
+      }
+      .hsm-card {
+        flex: 1;
+        background: #F8F7FD;
+        border: 1.5px solid #EAE6F5;
+        border-radius: 16px;
+        padding: 16px 10px 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+        transition: border-color 0.18s, background 0.18s;
+      }
+      .hsm-card:hover { background: #F0ECF9; border-color: #C4BCE0; }
+      .hsm-icon {
+        width: 32px; height: 32px;
+        background: rgba(155,139,208,0.12);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .hsm-icon svg { width: 16px; height: 16px; color: var(--accent); }
+      .hsm-number {
+        font-family: var(--font);
+        font-size: 20px;
+        font-weight: 800;
+        color: #0D0D0D;
+        letter-spacing: -0.5px;
+        line-height: 1;
+      }
+      .hsm-label {
+        font-family: var(--font);
+        font-size: 10.5px;
+        font-weight: 400;
+        color: #888;
+        line-height: 1.4;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-stats-mobile { padding: 14px 16px 18px; gap: 8px; }
+      .hsm-card { padding: 14px 8px 12px; border-radius: 14px; }
+      .hsm-number { font-size: 18px; }
+      .hsm-label { font-size: 10px; }
+    }
+
+    /* ─────────────────────────────────────
+       THE PROBLEM SECTION — split layout
+    ───────────────────────────────────── */
+    .problem-section, .why-section, .diff-section, .faq-section {
+      scroll-margin-top: 80px;
+      contain: layout paint; /* isolate paint/layout — browser can skip re-painting neighbours */
+    }
+
+    .problem-section {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      min-height: 100vh;
+      background: var(--white);
+    }
+
+    /* ── Left: image panel ── */
+    .problem-left {
+      flex: 0 0 52%;
+      position: relative;
+      overflow: hidden;
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .problem-left img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 25%;
+      display: block;
+    }
+
+    /* ── Problem section HUD annotations (same style as hero) ── */
+    .ph-1 { top: 20%; left: 38%; width: 88px; animation-delay: 0s; }
+    .ph-2 { top: 39%; left: 36%; width: 96px; animation-delay: 0.8s; }
+    .ph-3 { top: 57%; left: 37%; width: 88px; animation-delay: 1.6s; }
+    @media (max-width: 900px) {
+      .ph-1 { top: 20%; left: 36%; width: 72px; }
+      .ph-2 { top: 39%; left: 34%; width: 80px; }
+      .ph-3 { top: 57%; left: 35%; width: 72px; }
+    }
+    @media (max-width: 600px) {
+      .ph-1 { top: 20%; left: 35%; width: 62px; }
+      .ph-2 { top: 39%; left: 33%; width: 68px; }
+      .ph-3 { top: 57%; left: 34%; width: 62px; }
+    }
+
+    /* Right-edge + top-edge fade to blend seamlessly */
+    .problem-left::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to right, transparent 60%, var(--white) 100%),
+        linear-gradient(to bottom, var(--white) 0%, rgba(255,255,255,0.5) 8%, transparent 22%);
+      pointer-events: none;
+    }
+
+    /* ── Right: text panel ── */
+    .problem-right {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--section-pad-v) 56px var(--section-pad-v) 48px;
+      gap: 0;
+      background: var(--white);
+    }
+
+    .problem-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .problem-label::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1.5px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .problem-headline {
+      font-size: clamp(26px, 3vw, 40px);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -1.2px;
+      color: var(--text);
+      max-width: 480px;
+      margin-bottom: 36px;
+    }
+
+    /* Story paragraphs */
+    .problem-paras {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-width: 440px;
+    }
+
+    .problem-para {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--gray);
+      line-height: 1.8;
+    }
+
+    .problem-para strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Divider */
+    .problem-divider {
+      width: 40px;
+      height: 1px;
+      background: var(--border);
+      margin: 36px 0;
+    }
+
+    /* Stat block */
+    .problem-stat-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 400px;
+    }
+
+    .problem-stat-number {
+      font-size: clamp(40px, 5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+      color: var(--text);
+    }
+    .problem-stat-number span { color: var(--accent); }
+
+    .problem-stat-desc {
+      font-size: 13.5px;
+      font-weight: 400;
+      color: var(--gray);
+      letter-spacing: 0.2px;
+      line-height: 1.6;
+      max-width: 320px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .problem-section { flex-direction: column; min-height: auto; padding: 0; }
+      .problem-left {
+        flex: none;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9; /* tracks image's natural proportions */
+      }
+      .problem-left::after {
+        background:
+          linear-gradient(to bottom, var(--white) 0%, rgba(255,255,255,0.5) 10%, transparent 26%),
+          linear-gradient(to bottom, transparent 55%, var(--white) 100%);
+      }
+      .problem-right { padding: 40px 32px; }
+      .problem-headline { max-width: 100%; font-size: 32px; }
+      .problem-paras { max-width: 100%; }
+      .problem-para { font-size: 15px; line-height: 1.6; }
+    }
+
+    @media (max-width: 480px) {
+      .problem-left { aspect-ratio: 4 / 3; } /* slightly taller on small phones for readability */
+      .problem-right { padding: 32px 16px; }
+      .problem-headline { font-size: 24px; letter-spacing: -0.6px; }
+      .problem-para { font-size: 13px; line-height: 1.5; }
+      .problem-stat-number { font-size: 42px; }
+    }
+
+    /* ─────────────────────────────────────
+       WHY THIS MATTERS — stats grid
+    ───────────────────────────────────── */
+    .why-section {
+      width: 100%;
+      background: var(--white);
+      padding: var(--section-pad-v) var(--section-pad-h);
+    }
+
+    .why-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .why-label {
+      display: inline-block;
+      font-family: var(--font);
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .why-headline {
+      font-family: var(--font);
+      font-size: clamp(22px, 3vw, 36px);
+      font-weight: 800;
+      letter-spacing: -1.2px;
+      line-height: 1.1;
+      color: var(--text);
+      max-width: 480px;
+      margin: 0 auto 10px;
+    }
+
+    .why-sub {
+      font-family: var(--font);
+      font-size: 13.5px;
+      font-weight: 400;
+      color: #555;
+      max-width: 380px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Bordered 2×2 grid */
+    .why-grid {
+      max-width: 860px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .why-card {
+      flex: 1 1 calc(50% - 0px);
+      min-width: 260px;
+      background: var(--white);
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.18s;
+    }
+
+    .why-card:nth-child(2n) { border-right: none; }
+    .why-card:nth-last-child(-n+2) { border-bottom: none; }
+    .why-card:hover { background: #F7F7F7; }
+
+    .why-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%;
+      width: 3px;
+      background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+      border-radius: 2px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .why-card:hover::before { opacity: 1; }
+
+    .why-card-icon {
+      width: 26px;
+      height: 26px;
+      color: var(--accent);
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 3px;
+    }
+
+    .why-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .why-card-number {
+      font-family: var(--font);
+      font-size: clamp(32px, 3.5vw, 44px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .why-card-number .accent { color: var(--accent); }
+
+    .why-card-label {
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 400;
+      color: #555;
+      line-height: 1.65;
+      max-width: 220px;
+    }
+
+    .why-card-label strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .why-section { padding: 32px 20px; }
+      .why-header { margin-bottom: 32px; }
+      .why-title { font-size: 28px; }
+      .why-card { flex: 1 1 100%; border-right: none; padding: 24px 20px; }
+      .why-card:nth-last-child(-n+2) { border-bottom: 1px solid var(--border); }
+      .why-card:last-child { border-bottom: none; }
+      .why-card-icon { width: 56px; height: 56px; }
+      .why-card-title { font-size: 18px; }
+      .why-card-desc { font-size: 15px; line-height: 1.5; }
+    }
+
+    @media (max-width: 480px) {
+      .why-section { padding: 40px 16px; }
+      .why-header { margin-bottom: 24px; }
+      .why-title { font-size: 22px; }
+      .why-card { padding: 16px; gap: 12px; }
+      .why-card-icon { width: 48px; height: 48px; }
+      .why-card-title { font-size: 16px; }
+      .why-card-desc { font-size: 14px; }
+    }
+
+    /* ─────────────────────────────────────
+       FAQ SECTION
+    ───────────────────────────────────── */
+    .faq-section {
+      width: 100%;
+      background: #fff;
+      padding: 80px 48px 88px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Ambient glow blobs */
+    .faq-section::before {
+      content: '';
+      position: absolute;
+      top: -120px; left: -80px;
+      width: 480px; height: 480px;
+      background: radial-gradient(circle, rgba(155,139,208,0.07) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .faq-section::after {
+      content: '';
+      position: absolute;
+      bottom: -100px; right: -60px;
+      width: 380px; height: 380px;
+      background: radial-gradient(circle, rgba(155,139,208,0.05) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .faq-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .faq-header {
+      margin-bottom: 56px;
+    }
+    .faq-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .faq-eyebrow-line {
+      width: 24px; height: 1.5px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .faq-title {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.05;
+      color: var(--text);
+    }
+    .faq-title em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .faq-subtitle {
+      margin-top: 14px;
+      font-size: 14.5px;
+      color: var(--gray);
+      line-height: 1.65;
+      max-width: 440px;
+    }
+
+    /* Accordion list */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+    .faq-item.revealed { opacity: 1; transform: translateY(0); }
+
+    .faq-question {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: var(--font);
+      font-size: 15.5px;
+      font-weight: 600;
+      color: #333;
+      letter-spacing: -0.3px;
+      line-height: 1.4;
+      transition: color 0.2s;
+    }
+    .faq-question:hover { color: var(--text); }
+
+    /* Number badge */
+    .faq-num {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      opacity: 0.7;
+      flex-shrink: 0;
+      min-width: 20px;
+      margin-right: 4px;
+    }
+    .faq-q-text { flex: 1; }
+
+    /* Animated plus/minus icon */
+    .faq-icon {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(155,139,208,0.1);
+      border: 1px solid rgba(155,139,208,0.2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.22s, border-color 0.22s, transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .faq-icon svg {
+      width: 12px; height: 12px;
+      color: var(--accent);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .faq-item.open .faq-icon {
+      background: rgba(155,139,208,0.22);
+      border-color: rgba(155,139,208,0.45);
+      transform: rotate(180deg);
+    }
+    .faq-item.open .faq-question { color: var(--text); }
+
+    /* Answer panel */
+    .faq-answer {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.38s cubic-bezier(0.4,0,0.2,1);
+    }
+    .faq-answer-inner {
+      overflow: hidden;
+    }
+    .faq-item.open .faq-answer {
+      grid-template-rows: 1fr;
+    }
+    .faq-answer-body {
+      padding: 0 0 22px 24px;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--gray);
+      line-height: 1.8;
+      max-width: 620px;
+    }
+    .faq-answer-body strong { color: var(--text); font-weight: 600; }
+    .faq-answer-body a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(155,139,208,0.35); transition: border-color 0.18s; }
+    .faq-answer-body a:hover { border-color: var(--accent); }
+
+    /* Bottom CTA strip */
+    .faq-cta-strip {
+      margin-top: 52px;
+      padding: 28px 32px;
+      background: rgba(155,139,208,0.06);
+      border: 1px solid rgba(155,139,208,0.16);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .faq-cta-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .faq-cta-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .faq-cta-sub {
+      font-size: 12.5px;
+      color: var(--gray);
+    }
+    .faq-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 100px;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: background 0.18s, transform 0.15s;
+      box-shadow: 0 4px 18px rgba(155,139,208,0.35);
+      flex-shrink: 0;
+    }
+    .faq-cta-btn:hover { background: #8a79c0; transform: translateY(-1px); }
+    .faq-cta-btn svg { width: 14px; height: 14px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .faq-section { padding: 60px 24px 72px; }
+      .faq-header { margin-bottom: 40px; }
+      .faq-title { letter-spacing: -1.5px; }
+      .faq-question { font-size: 14.5px; padding: 20px 0; }
+      .faq-cta-strip { flex-direction: column; align-items: flex-start; padding: 24px 20px; }
+      .faq-cta-btn { width: 100%; justify-content: center; }
+    }
+    @media (max-width: 480px) {
+      .faq-section { padding: 48px 16px 60px; }
+      .faq-header { margin-bottom: 32px; }
+      .faq-question { font-size: 14px; padding: 18px 0; gap: 14px; }
+      .faq-answer-body { font-size: 13.5px; padding-bottom: 18px; }
+      .faq-num { display: none; }
+    }
+
+    /* ─────────────────────────────────────
+       WHAT MAKES US DIFFERENT
+    ───────────────────────────────────── */
+    .diff-section {
+      width: 100%;
+      background: var(--white);
+      padding: var(--section-pad-v) var(--section-pad-h);
+    }
+
+    /* ── Header ── */
+    .diff-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .diff-label {
+      display: inline-block;
+      font-family: var(--font);
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .diff-headline {
+      font-family: var(--font);
+      font-size: clamp(26px, 3.5vw, 44px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.08;
+      color: var(--text);
+      max-width: 520px;
+      margin: 0 auto 12px;
+    }
+    .diff-headline em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .diff-sub {
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--gray);
+      max-width: 360px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Comparison strip ── */
+    .diff-compare {
+      max-width: 760px;
+      margin: 0 auto 40px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .diff-compare.revealed { opacity: 1; transform: translateY(0); }
+
+    .diff-compare-head {
+      display: flex;
+      background: #F7F7F7;
+      border-bottom: 1px solid var(--border);
+    }
+    .diff-compare-head-cell {
+      flex: 1;
+      padding: 11px 28px;
+      font-family: var(--font);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .diff-compare-head-cell:first-child {
+      color: var(--gray-light);
+      border-right: 1px solid var(--border);
+    }
+    .diff-compare-head-cell:last-child { color: var(--accent); }
+
+    .diff-row {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .diff-row:last-child { border-bottom: none; }
+    .diff-row.revealed { opacity: 1; transform: translateY(0); }
+
+    .diff-cell {
+      flex: 1;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .diff-cell.muted {
+      color: var(--gray-light);
+      border-right: 1px solid var(--border);
+      text-decoration: line-through;
+      text-decoration-color: var(--border);
+    }
+    .diff-cell.muted .diff-icon { color: var(--gray-light); }
+    .diff-cell.bright {
+      color: var(--text);
+      background: rgba(155,139,208,0.05);
+    }
+    .diff-cell.bright .diff-icon { color: var(--accent); }
+
+    .diff-icon { flex-shrink: 0; width: 15px; height: 15px; }
+
+    /* ── Bento grid ── */
+    .diff-bento {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .diff-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 26px 28px 22px;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.5s ease, transform 0.5s ease, background 0.2s, border-color 0.2s;
+    }
+    .diff-card.revealed { opacity: 1; transform: translateY(0); }
+    .diff-card:hover {
+      background: #F7F7F7;
+      border-color: var(--accent);
+    }
+
+    .diff-card--wide   { flex: 1 1 calc(58% - 6px); min-width: 280px; }
+    .diff-card--narrow { flex: 1 1 calc(42% - 6px); min-width: 220px; }
+
+    .diff-card::after {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(155,139,208,0.07) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .diff-card-label {
+      font-family: var(--font);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .diff-card-title {
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+    }
+    .diff-card-body {
+      font-family: var(--font);
+      font-size: 12px;
+      color: var(--gray);
+      line-height: 1.65;
+      max-width: 300px;
+    }
+
+    /* ── Decorative UI ── */
+    .deco-scan {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .deco-ring {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(155,139,208,0.5);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; flex-shrink: 0;
+    }
+    .deco-ring::before {
+      content: '';
+      position: absolute;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(155,139,208,0.25);
+    }
+    .deco-ring-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: ringPulse 2s ease-in-out infinite;
+    }
+    @keyframes ringPulse {
+      0%,100% { box-shadow: 0 0 5px rgba(155,139,208,0.55); }
+      50%      { box-shadow: 0 0 16px rgba(155,139,208,0.85); }
+    }
+    .deco-scan-text { font-family: var(--font); font-size: 11px; color: var(--gray); line-height: 1.6; }
+    .deco-scan-text strong { color: var(--accent); font-weight: 600; }
+
+    .deco-risk { margin-top: 20px; display: flex; flex-direction: column; gap: 7px; }
+    .deco-risk-row { display: flex; align-items: center; gap: 10px; }
+    .deco-risk-bar { height: 3px; border-radius: 2px; flex-shrink: 0; }
+    .risk-low  { background: #4CAF87; width: 36px; }
+    .risk-mid  { background: #E8A838; width: 62px; }
+    .risk-high { background: #D95F5F; width: 88px; }
+    .deco-risk-pill {
+      font-family: var(--font);
+      font-size: 9.5px; font-weight: 600;
+      border-radius: 100px; padding: 2px 9px; letter-spacing: 0.3px;
+    }
+    .risk-low-pill  { background: rgba(76,175,135,0.1);  color: #4CAF87; border: 1px solid rgba(76,175,135,0.22); }
+    .risk-mid-pill  { background: rgba(232,168,56,0.1);  color: #E8A838; border: 1px solid rgba(232,168,56,0.22); }
+    .risk-high-pill { background: rgba(217,95,95,0.1);   color: #D95F5F; border: 1px solid rgba(217,95,95,0.22); }
+
+    .deco-chart { margin-top: 20px; position: relative; height: 48px; }
+    .deco-chart svg { width: 100%; height: 48px; overflow: visible; }
+
+    .deco-timeline { margin-top: 16px; display: flex; flex-direction: column; gap: 0; }
+    .deco-tl-row { display: flex; align-items: flex-start; gap: 12px; }
+    .deco-tl-left { display: flex; flex-direction: column; align-items: center; width: 12px; flex-shrink: 0; }
+    .deco-tl-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      background: #fff; flex-shrink: 0; margin-top: 2px;
+    }
+    .deco-tl-dot.active { background: var(--accent); box-shadow: 0 0 7px rgba(155,139,208,0.55); }
+    .deco-tl-line { width: 1px; flex: 1; min-height: 16px; background: rgba(155,139,208,0.18); }
+    .deco-tl-content { padding-bottom: 14px; }
+    .deco-tl-date { font-family: var(--font); font-size: 9px; color: var(--gray-light); font-weight: 600; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .deco-tl-note { font-family: var(--font); font-size: 10.5px; color: var(--gray); line-height: 1.5; }
+    .deco-tl-note strong { color: var(--text-secondary); }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      .diff-section { padding: 40px 20px 48px; }
+      .diff-header { margin-bottom: 32px; }
+      .diff-title { font-size: 28px; }
+      .diff-card--wide, .diff-card--narrow { flex: 1 1 100%; }
+      .diff-cell { padding: 12px 18px; font-size: 14px; }
+      .diff-compare-head-cell { padding: 10px 18px; font-size: 13px; }
+    }
+    @media (max-width: 480px) {
+      .diff-section { padding: 24px 16px 32px; }
+      .diff-header { margin-bottom: 20px; }
+      .diff-title { font-size: 20px; }
+      .diff-compare { margin-bottom: 24px; }
+      .diff-cell { padding: 10px 12px; font-size: 13px; }
+      .diff-compare-head-cell { padding: 8px 12px; font-size: 12px; }
+    }
+    /* ─────────────────────────────────────
+       FOOTER
+    ───────────────────────────────────── */
+    .site-footer {
+      width: 100%;
+      background: var(--white);
+      font-family: var(--font);
+    }
+
+    /* ── Main footer body ── */
+    .footer-body {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 48px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      text-align: center;
+    }
+
+    /* Logo */
+    .footer-logo-wrap {
+      display: inline-flex;
+      align-items: center;
+    }
+    .footer-logo {
+      height: 68px;
+      width: auto;
+      display: block;
+      mix-blend-mode: multiply; /* removes paper bg on white footer */
+    }
+
+    /* Nav links — single row */
+    .footer-nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px 4px;
+      list-style: none;
+    }
+    .footer-nav li {
+      display: flex;
+      align-items: center;
+    }
+    /* Dot separator between items */
+    .footer-nav li:not(:last-child)::after {
+      content: '·';
+      color: var(--border);
+      font-size: 14px;
+      margin-left: 4px;
+    }
+    .footer-nav a {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--gray);
+      text-decoration: none;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color 0.18s, background 0.18s;
+      white-space: nowrap;
+    }
+    .footer-nav a:hover {
+      color: var(--text);
+      background: rgba(155,139,208,0.07);
+    }
+
+    /* Tagline */
+    .footer-tagline {
+      font-size: 13px;
+      color: var(--gray);
+      line-height: 1.65;
+      max-width: 360px;
+      margin: 0;
+    }
+
+    /* Socials */
+    .footer-socials {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .footer-social-btn {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      background: rgba(155,139,208,0.07);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none;
+      color: var(--gray);
+      transition: background 0.18s, color 0.18s, border-color 0.18s;
+    }
+    .footer-social-btn:hover {
+      background: rgba(155,139,208,0.14);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .footer-social-btn svg { width: 14px; height: 14px; }
+
+    /* ── Bottom bar ── */
+    .footer-bar {
+      border-top: 1px solid var(--border);
+      padding: 16px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .footer-bar-left {
+      font-size: 12px;
+      color: var(--gray-light);
+    }
+
+    /* ── Dot-matrix banner ── */
+    .footer-dot-banner {
+      width: 100%;
+      background: var(--white);
+      overflow: hidden;
+      padding: 32px 0 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .footer-dot-text {
+      font-family: var(--font);
+      font-size: clamp(48px, 9vw, 140px);
+      font-weight: 800;
+      letter-spacing: -3px;
+      line-height: 1;
+      white-space: nowrap;
+      background-image: radial-gradient(circle, var(--pink) 1.2px, transparent 1.2px);
+      background-size: 7px 7px;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      user-select: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .footer-body { padding: 44px 24px 36px; gap: 24px; }
+      .footer-bar { padding: 14px 24px; flex-direction: column; gap: 8px; }
+      .footer-dot-banner { padding: 24px 0 18px; }
+      .footer-dot-text { font-size: clamp(36px, 11vw, 80px); letter-spacing: -2px; }
+    }
+    @media (max-width: 480px) {
+      .footer-body { padding: 36px 16px 28px; gap: 20px; }
+      .footer-logo { height: 58px; }
+      .footer-nav a { font-size: 13px; padding: 4px 4px; }
+      .footer-bar { padding: 14px 16px; }
+      .footer-dot-text { font-size: clamp(30px, 13vw, 56px); background-size: 6px 6px; letter-spacing: -1.5px; }
+    }
+
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── HERO CARD ── -->
+  <div class="card">
+
+    <!-- Navbar -->
+    <nav>
+      <a class="nav-logo" href="#">
+        <img class="nav-logo-img" src="images/logo.png" alt="Sknsi – Sknsight AI" width="200" height="109" />
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#problem-section">Problem</a></li>
+        <li><a href="#why-section">Why This Matters?</a></li>
+        <li><a href="#diff-section">Advantage</a></li>
+        <li><a href="#faq-section">FAQs</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="#" class="btn-try-now">Try Now</a>
+        <button class="mobile-menu-btn" aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+    </nav>
+
+    <!-- Full-screen mobile menu -->
+    <div class="mobile-menu" role="dialog" aria-modal="true" aria-label="Navigation">
+
+      <button class="menu-close" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <ul>
+        <li><a href="#problem-section">Problem</a></li>
+        <li><a href="#why-section">Why This Matters?</a></li>
+        <li><a href="#diff-section">Advantage</a></li>
+        <li><a href="#faq-section">FAQs</a></li>
+      </ul>
+
+      <div class="menu-footer">
+        <a href="#" class="menu-login-btn">Login</a>
+        <a href="#" class="menu-cta">Try Free Now</a>
+      </div>
+
+    </div>
+
+    <!-- Hero section -->
+    <section class="hero">
+
+      <!-- Full bleed background image — WebP with JPEG fallback -->
+      <picture>
+        <source srcset="images/ashish.webp" type="image/webp" />
+        <img class="hero-bg" src="images/ashish.jpg" alt="Skin AI hero" fetchpriority="high" loading="eager" decoding="sync" width="1152" height="923" />
+      </picture>
+
+      <!-- Gradient overlay for text readability -->
+      <div class="hero-overlay"></div>
+
+      <!-- HUD scan boxes -->
+      <div class="hud-box hud-1"><span class="hud-label">Redness<br>/ Cheek</span></div>
+      <div class="hud-box hud-2"><span class="hud-label">Acne<br>/ Active</span></div>
+      <div class="hud-box hud-3"><span class="hud-label">Pigment<br>/ Spot</span></div>
+
+      <!-- Left text overlay -->
+      <div class="hero-left">
+        <h1 class="hero-headline">
+          Unlock<br>
+          <span class="accent">your skin's</span><br>
+          potential
+        </h1>
+        <p class="hero-sub">
+          Sknsi reads your skin, tracks changes<br>
+          over time, and tells you what matters.
+        </p>
+        <button class="btn-analyze">Analyze Skin</button>
+      </div>
+
+      <!-- Right stats overlay -->
+      <div class="hero-right">
+        <div class="stat-item">
+          <div class="stat-text">
+            <span class="stat-number">95%</span>
+            <span class="stat-label">accurate skin<br>analysis</span>
+          </div>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="2.5"/>
+            <path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/>
+            <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M18.36 5.64l-2.12 2.12M8.11 15.89l-2.12 2.12"/>
+          </svg>
+        </div>
+
+        <div class="stat-item">
+          <div class="stat-text">
+            <span class="stat-number">30+</span>
+            <span class="stat-label">skin concerns<br>analyzed</span>
+          </div>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/>
+            <path d="M8 8V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v3"/>
+            <path d="M9 13h6M9 16h4"/>
+          </svg>
+        </div>
+
+        <div class="stat-item">
+          <div class="stat-text">
+            <span class="stat-number">7-day</span>
+            <span class="stat-label">personalized<br>routine</span>
+          </div>
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="8" ry="2.5"/>
+            <path d="M4 5v4.5c0 1.38 3.58 2.5 8 2.5s8-1.12 8-2.5V5"/>
+            <path d="M4 9.5v4.5c0 1.38 3.58 2.5 8 2.5s8-1.12 8-2.5V9.5"/>
+            <path d="M4 14v4.5C4 19.88 7.58 21 12 21s8-1.12 8-2.5V14"/>
+          </svg>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ── HERO STATS CARDS — mobile only ── -->
+  <div class="hero-stats-mobile">
+
+    <!-- Card 1: 95% -->
+    <div class="hsm-card">
+      <div class="hsm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="2.5"/>
+          <path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/>
+          <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M18.36 5.64l-2.12 2.12M8.11 15.89l-2.12 2.12"/>
+        </svg>
+      </div>
+      <div class="hsm-number">95%</div>
+      <div class="hsm-label">accurate skin analysis</div>
+    </div>
+
+    <!-- Card 2: 30+ -->
+    <div class="hsm-card">
+      <div class="hsm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 8h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/>
+          <path d="M8 8V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v3"/>
+          <path d="M9 13h6M9 16h4"/>
+        </svg>
+      </div>
+      <div class="hsm-number">30+</div>
+      <div class="hsm-label">skin concerns analyzed</div>
+    </div>
+
+    <!-- Card 3: 7-day -->
+    <div class="hsm-card">
+      <div class="hsm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="8" ry="2.5"/>
+          <path d="M4 5v4.5c0 1.38 3.58 2.5 8 2.5s8-1.12 8-2.5V5"/>
+          <path d="M4 9.5v4.5c0 1.38 3.58 2.5 8 2.5s8-1.12 8-2.5V9.5"/>
+          <path d="M4 14v4.5C4 19.88 7.58 21 12 21s8-1.12 8-2.5V14"/>
+        </svg>
+      </div>
+      <div class="hsm-number">7-day</div>
+      <div class="hsm-label">personalized routine</div>
+    </div>
+
+  </div>
+
+  <!-- ── THE PROBLEM SECTION ── -->
+  <section class="problem-section" id="problem-section">
+
+    <!-- Left: image -->
+    <div class="problem-left">
+      <picture>
+        <source srcset="images/section2.webp" type="image/webp" />
+        <img
+          src="images/section2.jpg"
+          alt="Person scanning skin with Sknsight AI on mobile"
+          loading="lazy"
+          decoding="async"
+          width="1400"
+          height="933"
+        />
+      </picture>
+      <!-- AI pimple detection annotations -->
+      <div class="hud-box ph-1"><span class="hud-label">Pustule<br>/ Active</span></div>
+      <div class="hud-box ph-2"><span class="hud-label">Inflammation<br>/ Spreading</span></div>
+      <div class="hud-box ph-3"><span class="hud-label">Acne<br>/ Spot</span></div>
+    </div>
+
+    <!-- Right: text -->
+    <div class="problem-right">
+
+      <p class="problem-label">The Problem</p>
+
+      <h2 class="problem-headline">
+        Most people don't know what's happening to their skin until it gets worse.
+      </h2>
+
+      <div class="problem-paras">
+        <p class="problem-para">
+          When we notice a rash, infection, or inflammation on our skin, the first question is usually "What is this?" Most people search online, try home remedies, or ask friends and family. In reality, there is <strong>no reliable way to recognize early skin infections</strong> or inflammatory conditions without visiting a doctor.
+        </p>
+        <p class="problem-para">
+          When patients eventually visit a clinic, doctors ask: when did it start, did it spread, has it changed over time? But most people cannot answer clearly because <strong>the condition was never tracked</strong>. Important information about how the skin changed is often lost.
+        </p>
+        <p class="problem-para">
+          As a result, additional examinations or tests are frequently needed just to understand what actually happened. Sknsi helps capture this missing information by <strong>analyzing skin images, symptoms, and tracking changes over time</strong>.
+        </p>
+      </div>
+
+      <div class="problem-divider"></div>
+
+      <div class="problem-stat-block">
+        <div class="problem-stat-number"><span>1 in 3</span></div>
+        <p class="problem-stat-desc">
+          people misidentify common skin conditions and delay seeking appropriate care.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── WHY THIS MATTERS ── -->
+  <section class="why-section" id="why-section">
+
+    <div class="why-header">
+      <span class="why-label">Why This Matters</span>
+      <h2 class="why-headline">The scale of the problem, in numbers</h2>
+      <p class="why-sub">Skin conditions are among the most common health problems worldwide, yet early recognition and monitoring are often missing.</p>
+    </div>
+
+    <div class="why-grid">
+
+      <!-- Card 1: 900M -->
+      <div class="why-card">
+        <svg class="why-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="7" r="4"/>
+          <path d="M4 21v-1a8 8 0 0 1 16 0v1"/>
+          <path d="M1 21v-1a4 4 0 0 1 4-4"/>
+          <path d="M23 21v-1a4 4 0 0 0-4-4"/>
+        </svg>
+        <div class="why-card-body">
+          <div class="why-card-number">
+            <span class="count-up" data-target="900" data-suffix="M">0</span><span class="accent">+</span>
+          </div>
+          <p class="why-card-label"><strong>people worldwide</strong> are affected by skin diseases, making it one of the most common health problems on earth.</p>
+        </div>
+      </div>
+
+      <!-- Card 2: 25% -->
+      <div class="why-card">
+        <svg class="why-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a5 5 0 0 1 5 5c0 3.5-5 10-5 10S7 10.5 7 7a5 5 0 0 1 5-5z"/>
+          <circle cx="12" cy="7" r="2"/>
+        </svg>
+        <div class="why-card-body">
+          <div class="why-card-number">
+            <span class="count-up" data-target="70" data-suffix="%">0</span>
+          </div>
+          <p class="why-card-label"><strong>of dermatology cases</strong> involve infectious or inflammatory skin conditions, according to global studies.</p>
+        </div>
+      </div>
+
+      <!-- Card 3: 14M -->
+      <div class="why-card">
+        <svg class="why-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+          <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+        </svg>
+        <div class="why-card-body">
+          <div class="why-card-number">
+            <span class="count-up" data-target="14" data-suffix="M">0</span>
+          </div>
+          <p class="why-card-label"><strong>medical visits every year</strong> in the United States are related to skin infections alone.</p>
+        </div>
+      </div>
+
+      <!-- Card 4: $75B -->
+      <div class="why-card">
+        <svg class="why-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v2m0 8v2"/>
+          <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5"/>
+          <path d="M9 15h6"/>
+        </svg>
+        <div class="why-card-body">
+          <div class="why-card-number">
+            $<span class="count-up" data-target="75" data-suffix="B">0</span>
+          </div>
+          <p class="why-card-label"><strong>estimated annual healthcare burden</strong> from skin diseases in the United States. (JAAD Burden of Skin Disease Study)</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── WHAT MAKES US DIFFERENT ── -->
+  <section class="diff-section" id="diff-section">
+
+    <div class="diff-header">
+      <span class="diff-label">Our Advantage</span>
+      <h2 class="diff-headline">Most apps analyze<br><em>a single photo.</em></h2>
+      <p class="diff-sub">Sknsi is designed differently. Instead of one image, it analyzes skin images, symptoms, guided follow-up questions, and changes over time.</p>
+    </div>
+
+    <!-- Comparison strip -->
+    <div class="diff-compare">
+      <div class="diff-compare-head">
+        <div class="diff-compare-head-cell">Most apps</div>
+        <div class="diff-compare-head-cell">Sknsi</div>
+      </div>
+
+      <div class="diff-row">
+        <div class="diff-cell muted">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+          Analyze a single image
+        </div>
+        <div class="diff-cell bright">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,9 6,13 14,4"/></svg>
+          Analyze image, symptoms and guided questions
+        </div>
+      </div>
+
+      <div class="diff-row">
+        <div class="diff-cell muted">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+          Provide limited context
+        </div>
+        <div class="diff-cell bright">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,9 6,13 14,4"/></svg>
+          Provide structured risk classification
+        </div>
+      </div>
+
+      <div class="diff-row">
+        <div class="diff-cell muted">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+          No follow-up or monitoring
+        </div>
+        <div class="diff-cell bright">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,9 6,13 14,4"/></svg>
+          Track progression over time
+        </div>
+      </div>
+
+      <div class="diff-row">
+        <div class="diff-cell muted">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+          No personal history
+        </div>
+        <div class="diff-cell bright">
+          <svg class="diff-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,9 6,13 14,4"/></svg>
+          Build a personal skin timeline
+        </div>
+      </div>
+    </div>
+
+    <!-- Bento grid -->
+    <div class="diff-bento">
+
+      <!-- Card 1 — Wide: Detect early -->
+      <div class="diff-card diff-card--wide">
+        <p class="diff-card-label">Early Detection</p>
+        <h3 class="diff-card-title">Recognize patterns from the very first scan</h3>
+        <p class="diff-card-body">Sknsi analyzes your skin image together with symptom inputs and guided follow-up questions to identify patterns associated with common infectious and inflammatory skin conditions.</p>
+        <div class="deco-scan">
+          <div class="deco-ring"><div class="deco-ring-dot"></div></div>
+          <p class="deco-scan-text">Pattern recognition across<br><strong>202 skin conditions</strong></p>
+        </div>
+      </div>
+
+      <!-- Card 2 — Narrow: Risk levels -->
+      <div class="diff-card diff-card--narrow">
+        <p class="diff-card-label">Risk Classification</p>
+        <h3 class="diff-card-title">Understand your level of risk clearly</h3>
+        <p class="diff-card-body">Every assessment returns a structured risk classification so you understand what the findings mean and whether professional evaluation is appropriate.</p>
+        <div class="deco-risk">
+          <div class="deco-risk-row">
+            <div class="deco-risk-bar risk-low"></div>
+            <span class="deco-risk-pill risk-low-pill">Low</span>
+          </div>
+          <div class="deco-risk-row">
+            <div class="deco-risk-bar risk-mid"></div>
+            <span class="deco-risk-pill risk-mid-pill">Moderate</span>
+          </div>
+          <div class="deco-risk-row">
+            <div class="deco-risk-bar risk-high"></div>
+            <span class="deco-risk-pill risk-high-pill">Higher concern</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 — Narrow: Progression -->
+      <div class="diff-card diff-card--narrow">
+        <p class="diff-card-label">Progression Tracking</p>
+        <h3 class="diff-card-title">Watch how your skin changes over time</h3>
+        <p class="diff-card-body">Not a snapshot but a continuous record. Redness, spread, and severity are tracked against your baseline through follow-up scans and rechecks.</p>
+        <div class="deco-chart">
+          <svg viewBox="0 0 260 52" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#9B8BD0" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#9B8BD0" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,44 C30,44 40,36 60,30 C80,24 90,28 110,20 C130,12 150,18 170,10 C190,4 210,8 230,6 C240,5 250,4 260,4" stroke="#9B8BD0" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M0,44 C30,44 40,36 60,30 C80,24 90,28 110,20 C130,12 150,18 170,10 C190,4 210,8 230,6 C240,5 250,4 260,4 L260,52 L0,52 Z" fill="url(#chartGrad)"/>
+            <circle cx="260" cy="4" r="3" fill="#9B8BD0"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Card 4 — Wide: Skin history -->
+      <div class="diff-card diff-card--wide">
+        <p class="diff-card-label">Personal Skin History</p>
+        <h3 class="diff-card-title">Your skin history, structured for a doctor</h3>
+        <p class="diff-card-body">Every check-in becomes a data point. The system generates a structured history of images, symptoms, and progression that can be shared with a healthcare professional if further evaluation is needed.</p>
+        <div class="deco-timeline">
+          <div class="deco-tl-row">
+            <div class="deco-tl-left">
+              <div class="deco-tl-dot active"></div>
+              <div class="deco-tl-line"></div>
+            </div>
+            <div class="deco-tl-content">
+              <p class="deco-tl-date">Day 1</p>
+              <p class="deco-tl-note">First scan — <strong>redness noted</strong>, low concern</p>
+            </div>
+          </div>
+          <div class="deco-tl-row">
+            <div class="deco-tl-left">
+              <div class="deco-tl-dot"></div>
+              <div class="deco-tl-line"></div>
+            </div>
+            <div class="deco-tl-content">
+              <p class="deco-tl-date">Day 4</p>
+              <p class="deco-tl-note"><strong>Redness +15%</strong> — moderate, follow-up prompted</p>
+            </div>
+          </div>
+          <div class="deco-tl-row">
+            <div class="deco-tl-left">
+              <div class="deco-tl-dot"></div>
+            </div>
+            <div class="deco-tl-content">
+              <p class="deco-tl-date">Day 9</p>
+              <p class="deco-tl-note">Pattern consistent with <strong>dermatitis</strong> — share with doctor</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── FAQ SECTION ── -->
+  <section class="faq-section" id="faq-section">
+    <div class="faq-inner">
+
+      <div class="faq-header">
+        <div class="faq-eyebrow">
+          <span class="faq-eyebrow-line"></span>
+          Questions & Answers
+        </div>
+        <h2 class="faq-title">Things people<br>actually <em>wonder</em></h2>
+        <p class="faq-subtitle">Real questions from real users — answered honestly, without the marketing fluff.</p>
+      </div>
+
+      <div class="faq-list">
+
+        <!-- Q1 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">01</span>
+            <span class="faq-q-text">How accurate is the AI skin analysis?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                Sknsi analyzes skin images together with <strong>symptom inputs and guided follow-up questions</strong> to recognize patterns associated with common infectious and inflammatory skin conditions. The system focuses on early recognition and monitoring, helping users better understand their skin and how conditions may be evolving over time. Sknsi is designed as a <strong>support tool, not a replacement for professional medical diagnosis</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">02</span>
+            <span class="faq-q-text">Do you store my photos? Where does my data go?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                Images and symptom information may be stored securely to allow the system to track changes over time and build a personal skin history. This enables features such as <strong>progression tracking, rechecks and follow-up comparisons</strong>, and structured monitoring of skin changes. User data is handled using privacy and security safeguards.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">03</span>
+            <span class="faq-q-text">Can Sknsi detect serious conditions like melanoma or eczema?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                Sknsi focuses primarily on <strong>infectious and inflammatory skin conditions</strong>, which represent a large portion of everyday dermatology cases. The system provides risk insights and monitoring, helping users decide when professional medical evaluation may be appropriate. It does not provide medical diagnoses.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">04</span>
+            <span class="faq-q-text">Does the system work for different skin tones?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                Sknsi is designed using <strong>dermatology datasets that include diverse skin tones and skin types</strong>. Ensuring performance across different skin tones is an important part of developing responsible dermatology AI systems, and it remains a core consideration throughout model development and validation.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">05</span>
+            <span class="faq-q-text">How is this different from searching symptoms on Google?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                Online searches provide general information that may not match your specific situation. Sknsi analyzes <strong>your skin image, symptoms, and guided follow-up questions</strong> to provide more structured insights. The system focuses on infectious and inflammatory skin conditions covering approximately 202 conditions, and tracks how they change over time through follow-up scans and rechecks. This creates a personal skin history that offers more structured analysis than general online searches.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q6 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">06</span>
+            <span class="faq-q-text">Is this a medical diagnosis?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                No. Sknsi is designed as a <strong>decision-support and monitoring tool</strong>. It helps users understand possible skin changes, track progression, and determine when professional medical evaluation may be appropriate. Healthcare professionals should always be consulted for diagnosis and treatment decisions.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q7 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">07</span>
+            <span class="faq-q-text">Can I share my results with a doctor?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                Yes. The system can generate a <strong>structured history of images, symptoms, and progression over time</strong> which can be shared with healthcare professionals if further evaluation is needed. This helps doctors understand how the condition evolved before the consultation, providing context that is often missing from a standard appointment.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q8 -->
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            <span class="faq-num">08</span>
+            <span class="faq-q-text">How safe is AI skin analysis?</span>
+            <span class="faq-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="faq-answer" role="region">
+            <div class="faq-answer-inner">
+              <p class="faq-answer-body">
+                Sknsi is designed to support early awareness and monitoring of skin conditions, not replace professional medical evaluation. The system is developed using <strong>curated dermatology datasets and validated with dermatologist-reviewed data</strong>. Sknsi is being developed in alignment with Software as a Medical Device (SaMD) regulatory frameworks, including relevant FDA guidance. Users should always consult healthcare professionals for diagnosis and treatment.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CTA strip -->
+      <div class="faq-cta-strip">
+        <div class="faq-cta-text">
+          <p class="faq-cta-title">Still have a question?</p>
+          <p class="faq-cta-sub">Our team typically replies within a few hours.</p>
+        </div>
+        <a href="#" class="faq-cta-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          Chat with us
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="site-footer">
+
+    <div class="footer-body">
+
+      <!-- Logo -->
+      <div class="footer-logo-wrap">
+        <img class="footer-logo" src="images/logo.png" alt="Sknsi – Sknsight AI" loading="lazy" width="200" height="109" />
+      </div>
+
+      <!-- Nav links — same as navbar, single row with dot separators -->
+      <ul class="footer-nav">
+        <li><a href="#problem-section">Problem</a></li>
+        <li><a href="#why-section">Why This Matters?</a></li>
+        <li><a href="#diff-section">Advantage</a></li>
+        <li><a href="#faq-section">FAQs</a></li>
+      </ul>
+
+      <!-- Tagline -->
+      <p class="footer-tagline">Sknsi reads your skin, tracks changes over time, and tells you what matters.</p>
+
+      <!-- Socials -->
+      <div class="footer-socials">
+        <a href="#" class="footer-social-btn" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
+          </svg>
+        </a>
+        <a href="#" class="footer-social-btn" aria-label="X">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </a>
+        <a href="#" class="footer-social-btn" aria-label="TikTok">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
+          </svg>
+        </a>
+        <a href="#" class="footer-social-btn" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
+          </svg>
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="footer-bar">
+      <p class="footer-bar-left">© <span id="footer-year"></span> Sknsi Technologies Inc. All rights reserved.</p>
+      <p class="footer-bar-left">Made with ❤️ by Ashish</p>
+    </div>
+
+    <!-- Dot-matrix banner -->
+    <div class="footer-dot-banner">
+      <span class="footer-dot-text">Sknsi</span>
+    </div>
+
+  </footer>
+
+</div>
+
+<script>
+  // Count-up animation
+  const counters = document.querySelectorAll('.count-up');
+  const animateCount = (el) => {
+    const target = parseInt(el.dataset.target, 10);
+    const suffix = el.dataset.suffix || '';
+    const duration = 1600;
+    const startTime = performance.now();
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      el.textContent = Math.round(easeOut(progress) * target) + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  const countObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) { animateCount(entry.target); countObserver.unobserve(entry.target); }
+    });
+  }, { threshold: 0.3 });
+  counters.forEach(el => countObserver.observe(el));
+
+  // Scroll-reveal for diff section + FAQ (single shared observer — saves memory)
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  // Compare strip
+  const compareEl = document.querySelector('.diff-compare');
+  if (compareEl) revealObserver.observe(compareEl);
+
+  // Comparison rows — staggered
+  document.querySelectorAll('.diff-row').forEach((row, i) => {
+    row.style.transitionDelay = (i * 70) + 'ms';
+    revealObserver.observe(row);
+  });
+
+  // Bento cards — staggered
+  document.querySelectorAll('.diff-card').forEach((card, i) => {
+    card.style.transitionDelay = (i * 90) + 'ms';
+    revealObserver.observe(card);
+  });
+
+  // FAQ accordion
+  const faqItems = document.querySelectorAll('.faq-item');
+  faqItems.forEach(item => {
+    const btn = item.querySelector('.faq-question');
+    btn.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      // Close all
+      faqItems.forEach(i => {
+        i.classList.remove('open');
+        i.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+      });
+      // Toggle clicked
+      if (!isOpen) {
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  // FAQ items reuse the same revealObserver
+  faqItems.forEach((item, i) => {
+    item.style.transitionDelay = (i * 55) + 'ms';
+    revealObserver.observe(item);
+  });
+
+  // Auto year in footer
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+  // Scroll-triggered floating pill nav
+  const navEl = document.querySelector('nav');
+  function updateNav() {
+    navEl.classList.toggle('nav-scrolled', window.scrollY > 60);
+  }
+  window.addEventListener('scroll', updateNav, { passive: true });
+  updateNav();
+
+  // Mobile menu — full-screen overlay
+  const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+  const mobileMenu    = document.querySelector('.mobile-menu');
+  const menuClose     = document.querySelector('.menu-close');
+
+  function openMenu() {
+    mobileMenu.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMenu() {
+    mobileMenu.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  if (mobileMenuBtn && mobileMenu) {
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenu.classList.contains('show') ? closeMenu() : openMenu();
+    });
+    if (menuClose) menuClose.addEventListener('click', closeMenu);
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', closeMenu);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
+  }
+</script>
+
+</body>
+</html>
