@@ -155,6 +155,74 @@
       transform: translateX(-3px);
     }
 
+    /* Like button */
+    .cs-like-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      animation: fadeIn 0.6s ease forwards;
+      animation-delay: 1.5s;
+    }
+
+    .cs-like-btn {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 100px;
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.55);
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+      user-select: none;
+    }
+
+    .cs-like-btn:hover {
+      background: rgba(155, 139, 208, 0.15);
+      border-color: rgba(155, 139, 208, 0.4);
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .cs-like-btn.liked {
+      background: rgba(155, 139, 208, 0.2);
+      border-color: rgba(155, 139, 208, 0.6);
+      color: #fff;
+    }
+
+    .cs-like-btn.liked .cs-thumb {
+      filter: none;
+    }
+
+    .cs-thumb {
+      font-size: 20px;
+      display: inline-block;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .cs-like-btn.pop .cs-thumb {
+      animation: thumbPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes thumbPop {
+      0%   { transform: scale(1) rotate(0deg); }
+      40%  { transform: scale(1.5) rotate(-15deg); }
+      70%  { transform: scale(0.9) rotate(5deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .cs-like-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.04em;
+    }
+
     /* Mobile */
     @media (max-width: 480px) {
       .cs-logo { height: 80px; }
@@ -174,9 +242,55 @@
 
     <p class="cs-sub">Something exciting is on the way.</p>
 
+    <div class="cs-like-wrap">
+      <button class="cs-like-btn" id="likeBtn" aria-label="Show some love">
+        <span class="cs-thumb">👍</span>
+        <span id="likeCount">0</span>
+      </button>
+      <span class="cs-like-label">Show some love</span>
+    </div>
+
     <a class="cs-back" href="index.html">&#8592; Back to Home</a>
 
   </div>
+
+  <script>
+    (function () {
+      const SEED = 142; // base count so it doesn't start at zero
+      const btn = document.getElementById('likeBtn');
+      const countEl = document.getElementById('likeCount');
+
+      // Read stored values
+      let count = parseInt(localStorage.getItem('sknsi_likes') || SEED, 10);
+      let liked = localStorage.getItem('sknsi_liked') === '1';
+
+      function render() {
+        countEl.textContent = count;
+        btn.classList.toggle('liked', liked);
+      }
+
+      render();
+
+      btn.addEventListener('click', function () {
+        if (liked) {
+          liked = false;
+          count = Math.max(SEED, count - 1);
+        } else {
+          liked = true;
+          count += 1;
+        }
+        localStorage.setItem('sknsi_likes', count);
+        localStorage.setItem('sknsi_liked', liked ? '1' : '0');
+
+        // Trigger pop animation
+        btn.classList.remove('pop');
+        void btn.offsetWidth; // reflow to restart animation
+        btn.classList.add('pop');
+
+        render();
+      });
+    })();
+  </script>
 
 </body>
 </html>
