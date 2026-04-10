@@ -2599,8 +2599,9 @@
   /* ── Trigger label ── */
   #cw-label {
     position: absolute;
-    bottom: 68px;
+    bottom: 72px;
     right: 0;
+    z-index: -1;
     background: #1a1530;
     color: rgba(255,255,255,0.88);
     font-size: 12.5px;
@@ -2873,7 +2874,7 @@
   </div>
 
   <!-- Trigger label -->
-  <div id="cw-label">Fill out this 2-minute form about skin conditions. If you qualify, you get a <strong style="color:#9B8BD0">$10 gift card</strong>.</div>
+  <div id="cw-label">Fill out this 2-minute form about skin conditions. If you qualify, you get a <strong style="color:#9B8BD0">$1 gift card</strong>.</div>
 
   <!-- Floating trigger -->
   <button id="cw-trigger" aria-label="Open survey">
@@ -2938,12 +2939,18 @@
   }, 5000);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  function scrollDown() {
+    requestAnimationFrame(function () {
+      messages.scrollTop = messages.scrollHeight;
+    });
+  }
+
   function addMsg(text, type) {
     var el = document.createElement('div');
     el.className = 'cw-msg ' + type;
     el.textContent = text;
     messages.appendChild(el);
-    messages.scrollTop = messages.scrollHeight;
+    scrollDown();
   }
 
   function botSay(text, delay) {
@@ -2952,10 +2959,11 @@
       t.className = 'cw-typing';
       t.innerHTML = '<span></span><span></span><span></span>';
       messages.appendChild(t);
-      messages.scrollTop = messages.scrollHeight;
+      scrollDown();
       setTimeout(function () {
         t.remove();
         addMsg(text, 'bot');
+        scrollDown();
         resolve();
       }, delay || 650);
     });
@@ -2976,6 +2984,7 @@
       });
       optionsEl.appendChild(btn);
     });
+    scrollDown();
   }
 
   function setProgress(current) {
