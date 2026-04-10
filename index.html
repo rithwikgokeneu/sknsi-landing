@@ -2868,7 +2868,7 @@
     <div id="cw-messages"></div>
     <div id="cw-options"></div>
     <form id="cw-email-form" novalidate>
-      <input id="cw-email-input" type="email" placeholder="your@email.com" />
+      <input id="cw-email-input" type="text" placeholder="Type here..." />
       <button type="submit" id="cw-email-submit">Send</button>
     </form>
   </div>
@@ -2902,8 +2902,8 @@
       type: 'choice', options: ['Google / Internet search', 'A friend or family member', 'Reddit or online forum', 'A doctor or dermatologist'] },
     { key: 'q6', text: 'Have you ever been diagnosed with a skin condition by a doctor?',
       type: 'choice', options: ['Yes, and I\'ve had it in the last 6 months', 'Yes, but not in the last year', 'No, but I\'ve had skin concerns', 'No, I\'ve never had any skin concerns'] },
-    { key: 'email', text: "Last step — what's your email address? We'll send the gift card here.",
-      type: 'email' }
+    { key: 'name', text: "What's your name?", type: 'email' },
+    { key: 'phone', text: "Last step — what's your phone number? We'll reach out about the gift card.", type: 'email' }
   ];
 
   var panel       = document.getElementById('cw-panel');
@@ -3016,6 +3016,8 @@
       });
     } else {
       optionsEl.innerHTML = '';
+      emailInput.placeholder = q.key === 'phone' ? '+1 234 567 8900' : q.key === 'name' ? 'Your name' : 'Type here...';
+      emailInput.type = q.key === 'phone' ? 'tel' : 'text';
       emailForm.style.display = 'flex';
       setTimeout(function () { emailInput.focus(); }, 100);
     }
@@ -3023,11 +3025,14 @@
 
   emailForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    var email = emailInput.value.trim();
-    if (!email || !email.includes('@')) { emailInput.style.borderColor = '#E91E63'; return; }
+    var val = emailInput.value.trim();
+    if (!val) { emailInput.style.borderColor = '#E91E63'; return; }
+    emailInput.style.borderColor = '';
+    emailInput.value = '';
     emailForm.style.display = 'none';
-    answers['email'] = email;
-    addMsg(email, 'user');
+    var currentKey = QUESTIONS[step] ? QUESTIONS[step].key : 'input';
+    answers[currentKey] = val;
+    addMsg(val, 'user');
     step++;
     setTimeout(askQuestion, 350);
   });
