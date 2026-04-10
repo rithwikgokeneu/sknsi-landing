@@ -2596,6 +2596,45 @@
     font-family: var(--font);
   }
 
+  /* ── Trigger label ── */
+  #cw-label {
+    position: absolute;
+    bottom: 68px;
+    right: 0;
+    background: #1a1530;
+    color: rgba(255,255,255,0.88);
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(155,139,208,0.2);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+    width: 210px;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  #cw-label::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    right: 19px;
+    width: 12px;
+    height: 12px;
+    background: #1a1530;
+    border-right: 1px solid rgba(155,139,208,0.2);
+    border-bottom: 1px solid rgba(155,139,208,0.2);
+    transform: rotate(45deg);
+  }
+  #cw-label.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: none;
+  }
+
   /* ── Trigger button ── */
   #cw-trigger {
     width: 56px;
@@ -2833,6 +2872,9 @@
     </form>
   </div>
 
+  <!-- Trigger label -->
+  <div id="cw-label">Fill out this 2-minute form about skin conditions. If you qualify, you get a <strong style="color:#9B8BD0">$10 gift card</strong>.</div>
+
   <!-- Floating trigger -->
   <button id="cw-trigger" aria-label="Open survey">
     <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
@@ -2872,6 +2914,7 @@
   var emailInput  = document.getElementById('cw-email-input');
   var progressBar = document.getElementById('cw-progress-bar');
   var dot         = document.getElementById('cw-dot');
+  var label       = document.getElementById('cw-label');
 
   var isOpen = false, started = false, step = -1, answers = {};
 
@@ -2879,6 +2922,7 @@
     isOpen = true;
     panel.classList.add('open');
     dot.classList.remove('visible');
+    label.classList.remove('visible');
     if (!started) { started = true; setTimeout(showIntro, 450); }
   }
   function closePanel() { isOpen = false; panel.classList.remove('open'); }
@@ -2886,9 +2930,10 @@
   trigger.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
   closeBtn.addEventListener('click', closePanel);
 
-  // Auto-open: dot at 5s, panel at 6.5s
+  // Auto-open: dot + label at 5s, panel at 6.5s
   setTimeout(function () {
     dot.classList.add('visible');
+    label.classList.add('visible');
     setTimeout(function () { if (!isOpen) openPanel(); }, 1500);
   }, 5000);
 
@@ -2939,9 +2984,8 @@
 
   // ── Intro ─────────────────────────────────────────────────────────────────
   async function showIntro() {
-    await botSay('Hi there!', 500);
-    await botSay('Fill out this 2-minute form about skin conditions. If you qualify, you get a $10 gift card.', 900);
-    await botSay('Ready to start?', 600);
+    await botSay('Hi there! Ready to answer a few quick questions about skin conditions?', 600);
+    await botSay('Ready to start?', 500);
     showOptions(["Yes, let's go!", 'Maybe later'], function (ans) {
       if (ans === "Yes, let's go!") { step = 0; askQuestion(); }
       else { botSay('No worries! You can click the chat icon anytime to come back.', 500); }
