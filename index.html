@@ -2931,12 +2931,10 @@
   trigger.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
   closeBtn.addEventListener('click', closePanel);
 
-  // Auto-open: dot + label at 5s, panel at 6.5s
-  setTimeout(function () {
-    dot.classList.add('visible');
-    label.classList.add('visible');
-    setTimeout(function () { if (!isOpen) openPanel(); }, 1500);
-  }, 5000);
+  // Show label immediately, open panel after 30s
+  dot.classList.add('visible');
+  label.classList.add('visible');
+  setTimeout(function () { if (!isOpen) openPanel(); }, 30000);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function scrollDown() {
