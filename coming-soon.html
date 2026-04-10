@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coming Soon — Sknsi</title>
+  <link rel="icon" type="image/png" href="images/logo.png" />
+
+  <!-- Async Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" />
+  </noscript>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:     #9B8BD0;
+      --accent-dark:#2D2540;
+      --font:       'Plus Jakarta Sans', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0D0D0D 0%, #2D2540 60%, #1a1030 100%);
+      overflow: hidden;
+    }
+
+    /* Subtle background glow orbs */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    body::before {
+      width: 500px;
+      height: 500px;
+      background: rgba(155, 139, 208, 0.12);
+      top: -120px;
+      right: -100px;
+    }
+    body::after {
+      width: 400px;
+      height: 400px;
+      background: rgba(155, 139, 208, 0.08);
+      bottom: -80px;
+      left: -80px;
+    }
+
+    .cs-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      padding: 40px 24px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Logo with pulse glow */
+    .cs-logo {
+      height: 120px;
+      width: auto;
+      filter: brightness(0) invert(1);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes logoPulse {
+      0%, 100% {
+        transform: scale(1);
+        filter: brightness(0) invert(1) drop-shadow(0 0 0px rgba(155,139,208,0));
+      }
+      50% {
+        transform: scale(1.04);
+        filter: brightness(0) invert(1) drop-shadow(0 0 22px rgba(155,139,208,0.7));
+      }
+    }
+
+    /* Heading wrapper */
+    .cs-heading {
+      font-size: clamp(42px, 10vw, 80px);
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -1px;
+      line-height: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0 2px;
+    }
+
+    /* Space between words */
+    .cs-heading .word-gap {
+      width: 0.35em;
+      display: inline-block;
+    }
+
+    /* Each letter animates as a wave */
+    .cs-heading span {
+      display: inline-block;
+      animation: letterWave 1.8s ease-in-out infinite;
+    }
+
+    @keyframes letterWave {
+      0%, 100% { transform: translateY(0); }
+      40%       { transform: translateY(-14px); }
+      60%       { transform: translateY(-8px); }
+    }
+
+    /* Subtext fades in */
+    .cs-sub {
+      font-size: clamp(15px, 2.5vw, 18px);
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.45);
+      letter-spacing: 0.02em;
+      opacity: 0;
+      animation: fadeIn 0.6s ease forwards;
+      animation-delay: 0.8s;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    /* Back link */
+    .cs-back {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      opacity: 0;
+      transition: color 0.18s ease, transform 0.18s ease;
+      animation: fadeIn 0.6s ease forwards;
+      animation-delay: 1.2s;
+      display: inline-block;
+    }
+    .cs-back:hover {
+      color: #fff;
+      transform: translateX(-3px);
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+      .cs-logo { height: 80px; }
+      .cs-wrap { gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cs-wrap">
+
+    <img class="cs-logo" src="images/logo.png" alt="Sknsi" width="200" height="109" />
+
+    <h1 class="cs-heading" aria-label="Coming Soon">
+      <span style="animation-delay:0.00s">C</span><span style="animation-delay:0.08s">o</span><span style="animation-delay:0.16s">m</span><span style="animation-delay:0.24s">i</span><span style="animation-delay:0.32s">n</span><span style="animation-delay:0.40s">g</span><span class="word-gap"></span><span style="animation-delay:0.56s">S</span><span style="animation-delay:0.64s">o</span><span style="animation-delay:0.72s">o</span><span style="animation-delay:0.80s">n</span>
+    </h1>
+
+    <p class="cs-sub">Something exciting is on the way.</p>
+
+    <a class="cs-back" href="index.html">&#8592; Back to Home</a>
+
+  </div>
+
+</body>
+</html>
