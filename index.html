@@ -2902,7 +2902,7 @@
 <script>
 (function () {
   // ── Paste your deployed Apps Script URL here ──────────────────────────────
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyp_MNNEJTd-723yMwDEhRtbG-EjGx1rAQoUolZGOBdPPs82TWew0M36yhIEbrKlNl--A/exec';
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOkoUUKaIAY_EDP4fPOz219A1JB0N0YGMjvIt95ip6T3BB3sILmhSjJIpkuyNxx0Az7Q/exec';
   // ─────────────────────────────────────────────────────────────────────────
 
   var QUESTIONS = [
@@ -3062,13 +3062,14 @@
         await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
-          body: new URLSearchParams({ payload: JSON.stringify(payload) })
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
         });
-      } catch (err) { /* no-cors fetch always throws — data still saves */ }
+      } catch (err) { /* silently continue */ }
     }
 
     await botSay('Thank you so much! 🎉', 700);
-    await botSay("We'll review your responses and reach out about the gift card to your email.", 900);
+    await botSay("We'll review your responses and reach out about the gift card.", 900);
     optionsEl.innerHTML = '';
   }
 })();
