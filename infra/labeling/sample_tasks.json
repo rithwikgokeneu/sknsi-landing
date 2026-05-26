@@ -1,0 +1,16 @@
+[
+  {
+    "data": {
+      "image": "https://s3.us-east-1.wasabisys.com/sknsi-annotation/raw/batch_001/case_000001.jpg",
+      "image_id": "case_000001",
+      "batch_id": "batch_001"
+    }
+  },
+  {
+    "data": {
+      "image": "https://s3.us-east-1.wasabisys.com/sknsi-annotation/raw/batch_001/case_000002.jpg",
+      "image_id": "case_000002",
+      "batch_id": "batch_001"
+    }
+  }
+]

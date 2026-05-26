@@ -1,0 +1,410 @@
+<View>
+  <Header value="SKNSI Cellulitis Annotation — Maher Schema v1.0"/>
+
+  <!-- ============================================================ -->
+  <!-- IMAGE                                                          -->
+  <!-- ============================================================ -->
+  <Image name="image" value="$image" zoom="true" zoomControl="true"
+         rotateControl="false" brightnessControl="true" contrastControl="true"/>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 0 — IMAGE ACCEPTANCE GATE                              -->
+  <!-- ============================================================ -->
+  <View style="background:#FFF3E0;padding:16px;border-radius:12px;margin-top:8px;">
+    <Header value="0.1 Annotation status (decide first)"/>
+    <Choices name="annotation_status" toName="image" choice="single" required="true">
+      <Choice value="Annotate (proceed)"/>
+      <Choice value="Skip — unusable image"/>
+      <Choice value="Exclude — out of scope"/>
+      <Choice value="Exclude — privacy / consent concern"/>
+      <Choice value="Exclude — duplicate of another image"/>
+    </Choices>
+
+    <View visibleWhen="choice-selected" whenTagName="annotation_status"
+          whenChoiceValue="Skip — unusable image,Exclude — out of scope,Exclude — privacy / consent concern,Exclude — duplicate of another image">
+      <Header value="0.2 Skip / exclude reason (optional)"/>
+      <TextArea name="skip_reason" toName="image" rows="2"
+                placeholder="Optional. Brief reason — submit and move on."/>
+    </View>
+  </View>
+
+  <!-- ============================================================ -->
+  <!-- BELOW THIS LINE: ONLY SHOWN WHEN annotation_status = Annotate  -->
+  <!-- ============================================================ -->
+  <View visibleWhen="choice-selected" whenTagName="annotation_status"
+        whenChoiceValue="Annotate (proceed)">
+
+    <!-- ========================================================== -->
+    <!-- DRAWING TOOLS (used inside per-lesion section E)            -->
+    <!-- ========================================================== -->
+    <Header value="E1. Lesion segmentation — click a color label, then drag on image"/>
+
+    <BrushLabels name="lesion_brush" toName="image" strokeWidth="50" opacity="0.85">
+      <Label value="Erythema (primary affected)"  background="#FF1744"/>
+      <Label value="Streaking / lymphangitis"     background="#FFEA00"/>
+      <Label value="Bullae / blister"             background="#00E5FF"/>
+      <Label value="Necrosis / black tissue"      background="#6200EA"/>
+      <Label value="Ulceration / open wound"      background="#FF00FF"/>
+      <Label value="Drainage / pus"               background="#FF9100"/>
+      <Label value="Normal comparison"            background="#00E676"/>
+    </BrushLabels>
+
+    <PolygonLabels name="lesion_boundary" toName="image" strokeWidth="4"
+                   pointSize="medium" opacity="0.9">
+      <Label value="Lesion boundary" background="#18FFFF"/>
+    </PolygonLabels>
+
+    <!-- ========================================================== -->
+    <!-- SECTION E (per-lesion) — attributes per polygon             -->
+    <!-- All shown only when a polygon region is selected            -->
+    <!-- ========================================================== -->
+    <View style="background:#FCE4EC;padding:16px;border-radius:12px;margin-top:8px;">
+      <Header value="Per-lesion attributes — select a polygon, then fill below"/>
+
+      <Header value="E1a. Polygon includes interior exclusions (tattoo/scar inside)?"/>
+      <Choices name="interior_exclusions" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Yes"/>
+        <Choice value="No"/>
+      </Choices>
+
+      <Header value="E2. Border definition"/>
+      <Choices name="border_definition" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Well-demarcated (sharp / step-off edge)"/>
+        <Choice value="Poorly demarcated (fuzzy)"/>
+        <Choice value="Indeterminate"/>
+      </Choices>
+
+      <Header value="E3. Extent"/>
+      <Choices name="lesion_extent" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Localized (&lt;5% of region)"/>
+        <Choice value="Regional"/>
+        <Choice value="Extensive (whole limb segment)"/>
+      </Choices>
+
+      <Header value="E4a. Erythema color"/>
+      <Choices name="erythema_color" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Pink"/>
+        <Choice value="Red"/>
+        <Choice value="Dark red"/>
+        <Choice value="Violaceous"/>
+        <Choice value="Dusky"/>
+        <Choice value="Non-erythematous"/>
+      </Choices>
+
+      <Header value="E4b. Erythema uniformity"/>
+      <Choices name="erythema_uniformity" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Uniform"/>
+        <Choice value="Mottled"/>
+        <Choice value="Patchy"/>
+      </Choices>
+
+      <Header value="E4c. Brown / hemosiderin discoloration present"/>
+      <Choices name="hemosiderin" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Yes"/>
+        <Choice value="No"/>
+      </Choices>
+
+      <Header value="E4d. Yellow / pus-shadow tones present"/>
+      <Choices name="yellow_tones" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Yes"/>
+        <Choice value="No"/>
+      </Choices>
+
+      <Header value="E5. Surface texture (multi-select)"/>
+      <Choices name="surface_texture" toName="image" choice="multiple" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Smooth"/>
+        <Choice value="Scaly"/>
+        <Choice value="Vesicular / blistered"/>
+        <Choice value="Crusted"/>
+        <Choice value="Eroded / ulcerated"/>
+        <Choice value="Lichenified (thickened, leathery)"/>
+        <Choice value="Glossy / taut (edematous)"/>
+      </Choices>
+
+      <Header value="E6. Edema / swelling"/>
+      <Choices name="edema" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="None visible"/>
+        <Choice value="Mild"/>
+        <Choice value="Moderate"/>
+        <Choice value="Severe / pitting visible"/>
+        <Choice value="Not assessable"/>
+      </Choices>
+
+      <Header value="E7. Associated features (multi-select)"/>
+      <Choices name="lesion_features" toName="image" choice="multiple" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Bullae / blistering"/>
+        <Choice value="Drainage / pus"/>
+        <Choice value="Open wound / ulceration"/>
+        <Choice value="Necrosis / black tissue"/>
+        <Choice value="Streaking (lymphangitic spread)"/>
+        <Choice value="Visible induration"/>
+        <Choice value="Petechiae / purpura"/>
+        <Choice value="Honey-colored crust (impetigo signal)"/>
+        <Choice value="Peau d'orange (erysipelas signal)"/>
+        <Choice value="Satellite lesions"/>
+        <Choice value="None"/>
+      </Choices>
+
+      <Header value="E8. Red flag — escalate for emergency review?"/>
+      <Choices name="red_flag" toName="image" choice="single" perRegion="true"
+               whenTagName="lesion_boundary">
+        <Choice value="Yes — emergency review"/>
+        <Choice value="No"/>
+      </Choices>
+    </View>
+
+    <!-- ========================================================== -->
+    <!-- SECTION A — image-level technical metadata                  -->
+    <!-- ========================================================== -->
+    <View style="background:#E3F2FD;padding:16px;border-radius:12px;margin-top:8px;">
+      <Header value="A1. Image modality"/>
+      <Choices name="image_modality" toName="image" choice="single" required="true">
+        <Choice value="Clinical photograph (standard camera/phone)"/>
+        <Choice value="Dermoscopic image"/>
+        <Choice value="Macro / close-up clinical"/>
+        <Choice value="Wide / contextual"/>
+        <Choice value="Other / unknown"/>
+      </Choices>
+
+      <Header value="A2. Lighting condition"/>
+      <Choices name="lighting" toName="image" choice="single" required="true">
+        <Choice value="Natural daylight"/>
+        <Choice value="Indoor / clinical fluorescent"/>
+        <Choice value="Flash used (visible specular reflection)"/>
+        <Choice value="Mixed / uncertain"/>
+        <Choice value="Color cast present (compromised fidelity)"/>
+      </Choices>
+
+      <Header value="A3. Image quality"/>
+      <Choices name="image_quality" toName="image" choice="single" required="true">
+        <Choice value="Acceptable"/>
+        <Choice value="Borderline (usable but degraded)"/>
+        <Choice value="Unusable"/>
+      </Choices>
+
+      <View visibleWhen="choice-selected" whenTagName="image_quality"
+            whenChoiceValue="Borderline (usable but degraded),Unusable">
+        <Header value="A3b. Quality issue (multi-select)"/>
+        <Choices name="image_quality_reason" toName="image" choice="multiple">
+          <Choice value="Focus"/>
+          <Choice value="Motion blur"/>
+          <Choice value="Lighting"/>
+          <Choice value="Obstruction"/>
+          <Choice value="Crop"/>
+          <Choice value="Compression artifact"/>
+          <Choice value="Other"/>
+        </Choices>
+      </View>
+
+      <Header value="A4. Scale reference present (ruler / coin / marker)?"/>
+      <Choices name="scale_reference" toName="image" choice="single" required="true">
+        <Choice value="Yes"/>
+        <Choice value="No"/>
+      </Choices>
+
+      <Header value="A5. Distance / framing"/>
+      <Choices name="framing" toName="image" choice="single" required="true">
+        <Choice value="Close-up (lesion fills frame)"/>
+        <Choice value="Standard"/>
+        <Choice value="Wide / contextual"/>
+      </Choices>
+    </View>
+
+    <!-- ========================================================== -->
+    <!-- SECTION B — anatomic context                                -->
+    <!-- ========================================================== -->
+    <View style="background:#E8F5E9;padding:16px;border-radius:12px;margin-top:8px;">
+      <Header value="B1. Anatomic region (primary location)"/>
+      <Choices name="anatomic_region" toName="image" choice="single" required="true">
+        <Choice value="Lower leg / shin / pretibial"/>
+        <Choice value="Medial malleolus / ankle"/>
+        <Choice value="Foot / dorsum / sole"/>
+        <Choice value="Thigh"/>
+        <Choice value="Upper extremity (arm / forearm)"/>
+        <Choice value="Hand / dorsum / palm"/>
+        <Choice value="Face — periorbital"/>
+        <Choice value="Face — other"/>
+        <Choice value="Neck"/>
+        <Choice value="Trunk — anterior / posterior"/>
+        <Choice value="Perineum / groin"/>
+        <Choice value="Other"/>
+      </Choices>
+
+      <Header value="B2. Laterality"/>
+      <Choices name="laterality" toName="image" choice="single" required="true">
+        <Choice value="Left"/>
+        <Choice value="Right"/>
+        <Choice value="Bilateral"/>
+        <Choice value="Midline"/>
+        <Choice value="Not applicable"/>
+      </Choices>
+
+      <Header value="B3. Contralateral limb visible in frame?"/>
+      <Choices name="contralateral_visible" toName="image" choice="single" required="true">
+        <Choice value="Yes"/>
+        <Choice value="No"/>
+      </Choices>
+
+      <Header value="B4. Patient position cues"/>
+      <Choices name="patient_position" toName="image" choice="single" required="true">
+        <Choice value="Standing / dependent"/>
+        <Choice value="Supine / elevated"/>
+        <Choice value="Not assessable"/>
+      </Choices>
+    </View>
+
+    <!-- ========================================================== -->
+    <!-- SECTION C — skin surface confounds                          -->
+    <!-- ========================================================== -->
+    <View style="background:#FFF8E1;padding:16px;border-radius:12px;margin-top:8px;">
+      <Header value="C1a. Demarcation / pen marks"/>
+      <Choices name="pen_marks" toName="image" choice="single" required="true">
+        <Choice value="None"/>
+        <Choice value="Single line"/>
+        <Choice value="Multiple lines (serial monitoring)"/>
+      </Choices>
+
+      <View visibleWhen="choice-selected" whenTagName="pen_marks"
+            whenChoiceValue="Single line,Multiple lines (serial monitoring)">
+        <Header value="C1b. Pen color(s) present (multi-select)"/>
+        <Choices name="pen_colors" toName="image" choice="multiple">
+          <Choice value="Black"/>
+          <Choice value="Blue"/>
+          <Choice value="Red"/>
+          <Choice value="Purple"/>
+          <Choice value="Green"/>
+          <Choice value="Other"/>
+          <Choice value="Multiple"/>
+        </Choices>
+
+        <Header value="C1c. Written annotations on skin (dates, arrows, text)?"/>
+        <Choices name="written_annotations" toName="image" choice="single">
+          <Choice value="Yes"/>
+          <Choice value="No"/>
+        </Choices>
+      </View>
+
+      <Header value="C2. Other skin-surface artifacts (multi-select)"/>
+      <Choices name="surface_artifacts" toName="image" choice="multiple">
+        <Choice value="Surgical site markings"/>
+        <Choice value="Biopsy markers / skin stickers / dots"/>
+        <Choice value="Adhesive residue"/>
+        <Choice value="Topical medication / cream visible"/>
+        <Choice value="Iodine / chlorhexidine staining (orange/brown prep)"/>
+        <Choice value="Dressing / bandage partially covering lesion"/>
+        <Choice value="IV / line / catheter visible"/>
+        <Choice value="Compression bandage marks (indents)"/>
+        <Choice value="None"/>
+      </Choices>
+
+      <Header value="C3. Pre-existing skin features in or near lesion (multi-select)"/>
+      <Choices name="preexisting_features" toName="image" choice="multiple">
+        <Choice value="Tattoo within or overlapping lesion"/>
+        <Choice value="Scar within or near lesion"/>
+        <Choice value="Mole / nevus within frame"/>
+        <Choice value="Hair (dense)"/>
+        <Choice value="Skin folds obscuring view"/>
+        <Choice value="Sun damage / solar lentigines"/>
+        <Choice value="Coexisting unrelated dermatologic condition"/>
+        <Choice value="None"/>
+      </Choices>
+
+      <Header value="C4. Privacy / frame issues (multi-select)"/>
+      <Choices name="privacy_issues" toName="image" choice="multiple">
+        <Choice value="Patient identifiers visible (face / tattoos / ID bands)"/>
+        <Choice value="Foreign objects unrelated to lesion (jewelry, clothing edge)"/>
+        <Choice value="None"/>
+      </Choices>
+    </View>
+
+    <!-- ========================================================== -->
+    <!-- SECTION D — diagnosis & clinical interpretation             -->
+    <!-- ========================================================== -->
+    <View style="background:#F3E5F5;padding:16px;border-radius:12px;margin-top:8px;">
+      <Header value="D1. Primary diagnosis"/>
+      <Choices name="diagnosis" toName="image" choice="single" required="true">
+        <Choice value="Cellulitis (clinically diagnosed)"/>
+        <Choice value="Erysipelas"/>
+        <Choice value="Cellulitis + abscess"/>
+        <Choice value="Necrotizing soft tissue infection (suspected)"/>
+        <Choice value="Stasis dermatitis"/>
+        <Choice value="Contact / irritant dermatitis"/>
+        <Choice value="Lipodermatosclerosis"/>
+        <Choice value="Lymphedema (chronic)"/>
+        <Choice value="Post-inflammatory hyperpigmentation (residual cellulitis)"/>
+        <Choice value="DVT presentation"/>
+        <Choice value="Gout (acute)"/>
+        <Choice value="Abscess without overlying cellulitis"/>
+        <Choice value="Impetigo"/>
+        <Choice value="Hematoma / bruising"/>
+        <Choice value="Other dermatologic erythema"/>
+        <Choice value="Normal skin / no pathology"/>
+        <Choice value="Unsure — uncodable"/>
+      </Choices>
+
+      <Header value="D2. Diagnosis confirmation status"/>
+      <Choices name="confirmation_status" toName="image" choice="single" required="true">
+        <Choice value="Treatment-confirmed (resolved with appropriate Rx)"/>
+        <Choice value="Clinically diagnosed, outcome unknown"/>
+        <Choice value="Suspected / clinical impression only"/>
+        <Choice value="Histology / culture confirmed"/>
+      </Choices>
+
+      <Header value="D3. Fitzpatrick skin tone (mandatory)"/>
+      <Choices name="fitzpatrick" toName="image" choice="single" required="true">
+        <Choice value="I"/>
+        <Choice value="II"/>
+        <Choice value="III"/>
+        <Choice value="IV"/>
+        <Choice value="V"/>
+        <Choice value="VI"/>
+        <Choice value="Unable to assess"/>
+      </Choices>
+
+      <Header value="D4. Coexisting findings in same image (multi-select)"/>
+      <Choices name="coexisting_findings" toName="image" choice="multiple">
+        <Choice value="Visible portal of entry (cut / fissure / bite / IV site / tinea pedis)"/>
+        <Choice value="Onychomycosis / nail changes"/>
+        <Choice value="Hair loss in lesion area"/>
+        <Choice value="Varicose veins / venous insufficiency signs"/>
+        <Choice value="Atrophie blanche (white scarring patches — chronic stasis)"/>
+        <Choice value="Visible regional lymphadenopathy"/>
+        <Choice value="None"/>
+      </Choices>
+    </View>
+
+    <!-- ========================================================== -->
+    <!-- SECTION F — annotation quality metadata                     -->
+    <!-- F1 (annotator id) and F2 (timestamp) auto-captured by LS    -->
+    <!-- ========================================================== -->
+    <View style="background:#F0F4F8;padding:16px;border-radius:12px;margin-top:8px;">
+      <Header value="F3. Diagnosis confidence (1 = unsure, 5 = certain)"/>
+      <Rating name="diagnosis_confidence" toName="image" maxRating="5" required="true"/>
+
+      <Header value="F4. Segmentation confidence (1 = rough, 5 = precise)"/>
+      <Rating name="segmentation_confidence" toName="image" maxRating="5" required="true"/>
+
+      <Header value="F5. Needs second opinion?"/>
+      <Choices name="needs_second_opinion" toName="image" choice="single" required="true">
+        <Choice value="Yes"/>
+        <Choice value="No"/>
+      </Choices>
+
+      <Header value="F6. Free-text notes (optional)"/>
+      <TextArea name="notes" toName="image" rows="3"
+                placeholder="Optional. Clinical observations, uncertainty, context."/>
+    </View>
+
+  </View>
+
+</View>

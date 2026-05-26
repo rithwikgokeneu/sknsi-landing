@@ -1,0 +1,25 @@
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Env files (secrets)
+.env
+infra/local/.env
+infra/prod/.env
+**/.env.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Pipeline outputs
+parsed/
+consensus/
+disagreements/
+exports/
+training/v*/
+local_images/
+infra/prod/backups/

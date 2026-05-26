@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clinical Annotation Portal — Sknsi</title>
+  <link rel="icon" type="image/png" href="images/logo.png" />
+  <link rel="apple-touch-icon" href="images/logo.png" />
+  <meta name="description" content="Sknsi Clinical Annotation Portal for invited dermatologists, doctors, and medical students to annotate de-identified skin images for research and model development." />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:        #9B8BD0;
+      --accent-dark:   #2D2540;
+      --accent-light:  #EDE9F8;
+      --pink:          #C2185B;
+      --text:          #0D0D0D;
+      --text-secondary:#444;
+      --gray:          #666;
+      --gray-light:    #999;
+      --border:        #E8E8E8;
+      --white:         #ffffff;
+      --font:          'Plus Jakarta Sans', sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background: #ffffff;
+      font-family: var(--font);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: saturate(180%) blur(12px);
+      -webkit-backdrop-filter: saturate(180%) blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo-img { height: 44px; width: auto; display: block; }
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray);
+      padding: 8px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    .nav-back:hover { background: var(--accent-light); color: var(--accent-dark); border-color: var(--accent-light); }
+
+    /* ── HERO ── */
+    .hero {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 96px 32px 48px;
+      text-align: center;
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 14px;
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5.5vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .hero p {
+      font-size: clamp(16px, 1.6vw, 18px);
+      line-height: 1.6;
+      color: var(--gray);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    /* ── CONTENT ── */
+    .content {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 16px 32px 64px;
+      display: grid;
+      gap: 28px;
+    }
+    .panel {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+    .panel h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      letter-spacing: -0.3px;
+    }
+    .panel p {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+    }
+    .panel p + p { margin-top: 10px; }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .feature-grid li {
+      list-style: none;
+      padding: 14px 16px;
+      background: var(--accent-light);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent-dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .feature-grid li::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .notice {
+      background: #FFF8EE;
+      border: 1px solid #F4E0BE;
+      border-radius: 16px;
+      padding: 20px 22px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .notice-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #E8A33D;
+      color: #fff;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .notice-body { font-size: 14px; line-height: 1.6; color: #5C3F12; }
+    .notice-body strong { color: #3F2A0B; }
+
+    /* ── CTA ── */
+    .cta {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 32px 96px;
+      text-align: center;
+    }
+    .cta-card {
+      background: var(--accent-dark);
+      border-radius: 24px;
+      padding: 48px 32px;
+      color: #fff;
+    }
+    .cta-card h3 {
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+    .cta-card p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.78);
+      max-width: 520px;
+      margin: 0 auto 24px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      color: var(--accent-dark);
+      padding: 14px 26px;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 15px;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+    .btn-primary svg { width: 16px; height: 16px; }
+
+    .cta-meta {
+      margin-top: 18px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 32px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--gray);
+    }
+    footer a { color: var(--gray); text-decoration: underline; text-underline-offset: 3px; }
+    footer a:hover { color: var(--accent-dark); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; height: 64px; }
+      .nav-logo-img { height: 36px; }
+      .hero { padding: 64px 20px 32px; }
+      .content { padding: 12px 20px 48px; gap: 20px; }
+      .panel { padding: 24px; border-radius: 16px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .cta { padding: 0 20px 64px; }
+      .cta-card { padding: 36px 24px; border-radius: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="/" aria-label="Sknsi home">
+      <img class="nav-logo-img" src="images/logo.png" alt="Sknsi" width="200" height="109" />
+    </a>
+    <a class="nav-back" href="/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to site
+    </a>
+  </nav>
+
+  <section class="hero">
+    <span class="pill">Restricted access · Research portal</span>
+    <h1>Clinical Annotation Portal</h1>
+    <p>For invited dermatologists, doctors, and medical students helping annotate de-identified skin images for research and machine-learning model development.</p>
+  </section>
+
+  <div class="content">
+
+    <div class="panel">
+      <h2>What reviewers do</h2>
+      <p>Reviewers trace visible abnormal skin regions, classify cellulitis and similar skin conditions, assess image quality, and provide a confidence rating. Each image is annotated by multiple reviewers to support quality control and reduce bias.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Annotation capabilities</h2>
+      <ul class="feature-grid">
+        <li>Polygon boundary tracing</li>
+        <li>Cellulitis vs. non-cellulitis classification</li>
+        <li>Cellulitis-like condition labeling</li>
+        <li>Fitzpatrick skin tone metadata</li>
+        <li>Body part metadata</li>
+        <li>Image-quality rating</li>
+        <li>Confidence rating</li>
+        <li>Multi-reviewer quality control</li>
+      </ul>
+    </div>
+
+    <div class="notice" role="note">
+      <div class="notice-icon" aria-hidden="true">!</div>
+      <div class="notice-body">
+        <strong>Access is limited to approved reviewers.</strong> All images must be de-identified before review. This portal is for research annotation only and does not provide medical diagnosis. Sign-in requires a valid invite link.
+      </div>
+    </div>
+
+  </div>
+
+  <section class="cta">
+    <div class="cta-card">
+      <h3>Continue to Annotation Portal</h3>
+      <p>Sign in or create your account using the invite link sent to you. New reviewers should contact the dataset admin to request access.</p>
+      <a href="/annotate" class="btn-primary">
+        Open Portal
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <p class="cta-meta">Powered by Label Studio · de-identified images · HTTPS only</p>
+    </div>
+  </section>
+
+  <footer>
+    © <span id="year"></span> Sknsi Technologies Inc. · <a href="/">sknsi.com</a>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>
