@@ -1,0 +1,41 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListBucket",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": "arn:aws:s3:::sknsi-annotation"
+    },
+    {
+      "Sid": "ReadAll",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": [
+        "arn:aws:s3:::sknsi-annotation/raw/*",
+        "arn:aws:s3:::sknsi-annotation/imports/*",
+        "arn:aws:s3:::sknsi-annotation/exports/*",
+        "arn:aws:s3:::sknsi-annotation/consensus/*",
+        "arn:aws:s3:::sknsi-annotation/disagreements/*",
+        "arn:aws:s3:::sknsi-annotation/masks/*",
+        "arn:aws:s3:::sknsi-annotation/training/*",
+        "arn:aws:s3:::sknsi-annotation/backups/*"
+      ]
+    },
+    {
+      "Sid": "WriteAll",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:AbortMultipartUpload", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::sknsi-annotation/raw/*",
+        "arn:aws:s3:::sknsi-annotation/imports/*",
+        "arn:aws:s3:::sknsi-annotation/exports/*",
+        "arn:aws:s3:::sknsi-annotation/disagreements/*",
+        "arn:aws:s3:::sknsi-annotation/consensus/*",
+        "arn:aws:s3:::sknsi-annotation/masks/*",
+        "arn:aws:s3:::sknsi-annotation/training/*",
+        "arn:aws:s3:::sknsi-annotation/backups/*"
+      ]
+    }
+  ]
+}

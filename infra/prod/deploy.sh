@@ -94,12 +94,19 @@ docker compose pull
 docker compose up -d
 docker compose ps
 
-echo "Installing daily Postgres backup cron"
+echo "Installing daily Postgres backup cron + Wasabi sync"
+# AWS CLI required for the Wasabi sync step.
+if ! command -v aws >/dev/null 2>&1; then
+  apt-get install -y awscli
+fi
 cat > /etc/cron.d/sknsi-backup <<'EOF'
-# Daily Postgres dump at 03:00, gzipped to /opt/sknsi-annotate/backups
+# Daily Postgres dump at 03:00, then sync backups/ to Wasabi.
+# Both Wasabi keys + Postgres creds are sourced from /opt/sknsi-annotate/.env.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-0 3 * * * root cd /opt/sknsi-annotate && set -a && . ./.env && set +a && docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "/opt/sknsi-annotate/backups/pg_$(date +\%F).sql.gz"
+0 3 * * * root cd /opt/sknsi-annotate && set -a && . ./.env && set +a && docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "/opt/sknsi-annotate/backups/pg_$(date +\%F).sql.gz" && AWS_ACCESS_KEY_ID="$WASABI_ACCESS_KEY" AWS_SECRET_ACCESS_KEY="$WASABI_SECRET_KEY" aws --endpoint-url "$WASABI_ENDPOINT" s3 sync /opt/sknsi-annotate/backups/ "s3://$WASABI_BUCKET/backups/postgres/"
+# Weekly local prune — keep last 30 days
+0 4 * * 0 root find /opt/sknsi-annotate/backups -name 'pg_*.sql.gz' -mtime +30 -delete
 EOF
 chmod 644 /etc/cron.d/sknsi-backup
 
